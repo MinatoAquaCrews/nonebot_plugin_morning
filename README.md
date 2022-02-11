@@ -19,7 +19,7 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="">
-    <img src="https://img.shields.io/badge/release-v0.2.0-alpha.1-orange">
+    <img src="https://img.shields.io/badge/release-v0.2.0alpha.1-orange">
   </a>
   
 </p>
