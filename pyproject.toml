@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "nonebot-plugin-morning"
+version = "0.2.0-alpha.1"
+description = "Good morning & good night!"
+authors = ["KafCoppelia <k740677208@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "nonebot_plugin_morning"}]
+
+[tool.poetry.dependencies]
+python = "^3.7.3"
+nonebot2 = "^2.0.0-beta.1"
+nonebot-adapter-onebot = "^2.0.0-beta.1"
+nonebot-plugin-apscheduler = "^0.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "tencentyun"
+url = "https://mirrors.tencent.com/pypi/simple"
+default = true
