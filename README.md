@@ -78,36 +78,36 @@ MORNING_PATH="your-path-to-resource"    # 默认位于os.path.join(os.path.dirna
 
 若未手动配置`confg.json`文件（或不存在），则默认写入初始配置：
 
-```json
+```python
 {
     "morning": {
-        "get_up_intime": {      //是否只能在规定时间起床床
-            "enable": true,     //默认开启，若关闭则下面两项无效
-            "early_time": 6,    //允许的最早的起床时间，默认早上6点
-            "late_time": 12     //允许的最晚的起床时间，默认中午12点
+        "get_up_intime": {      # 是否只能在规定时间起床床
+            "enable": true,     # 默认开启，若关闭则下面两项无效
+            "early_time": 6,    # 允许的最早的起床时间，默认早上6点
+            "late_time": 12     # 允许的最晚的起床时间，默认中午12点
         },
-        "multi_get_up": {       //是否允许多次起床
-            "enable": false,    //默认不允许，若允许则下面一项无效
-            "interval": 6       //两次起床间隔的时间，小于这个时间就不允许起床
+        "multi_get_up": {       # 是否允许多次起床
+            "enable": false,    # 默认不允许，若允许则下面一项无效
+            "interval": 6       # 两次起床间隔的时间，小于这个时间就不允许起床
         },
-        "super_get_up": {       //是否允许超级亢奋
-            "enable": false,    //默认不允许，若允许则下面一项无效
-            "interval": 3       //这次起床和上一次睡觉的时间间隔，小于这个时间就不允许起床，不怕猝死？给我睡！
+        "super_get_up": {       # 是否允许超级亢奋
+            "enable": false,    # 默认不允许，若允许则下面一项无效
+            "interval": 3       # 这次起床和上一次睡觉的时间间隔，小于这个时间就不允许起床，不怕猝死？给我睡！
         }
     },
     "night": {
-        "sleep_intime": {       //是否只能在规定时间睡觉
-            "enable": true,     //默认开启，若关闭则下面两项无效
-            "early_time": 21,   //允许的最早的睡觉时间，默认晚上21点
-            "late_time": 6      //允许的最晚的睡觉时间，默认次日早上6点
+        "sleep_intime": {       # 是否只能在规定时间睡觉
+            "enable": true,     # 默认开启，若关闭则下面两项无效
+            "early_time": 21,   # 允许的最早的睡觉时间，默认晚上21点
+            "late_time": 6      # 允许的最晚的睡觉时间，默认次日早上6点
         },
-        "good_sleep": {         //是否开启优质睡眠
-            "enable": true,     //默认开启，若关闭则下面一项无效
-            "interval": 6       //两次睡觉间隔的时间，小于这个时间就不允许睡觉
+        "good_sleep": {         # 是否开启优质睡眠
+            "enable": true,     # 默认开启，若关闭则下面一项无效
+            "interval": 6       # 两次睡觉间隔的时间，小于这个时间就不允许睡觉
         },
-        "deep_sleep": {         //是否允许深度睡眠
-            "enable": false,    //默认不允许，若允许则下面一项无效
-            "interval": 3       //这次睡觉和上一次起床的时间间隔，小于这个时间就不允许睡觉，睡个锤子，快起床！
+        "deep_sleep": {         # 是否允许深度睡眠
+            "enable": false,    # 默认不允许，若允许则下面一项无效
+            "interval": 3       # 这次睡觉和上一次起床的时间间隔，小于这个时间就不允许睡觉，睡个锤子，快起床！
         }
     }
 }
