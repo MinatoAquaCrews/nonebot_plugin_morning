@@ -1,6 +1,6 @@
 import nonebot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 from pathlib import Path
 import datetime
 import os
@@ -166,7 +166,7 @@ class MorningManager:
         return msg
 
     # 更改时间或间隔
-    def change_set_time(self, *args):
+    def change_set_time(self, *args) -> str:
         try:
             day_or_night = args[0]
             server = args[1]
@@ -331,7 +331,7 @@ class MorningManager:
         return False
 
     # 进行早安并更新数据
-    def morning_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> tuple[str, Union[int, str]]:
+    def morning_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> Tuple[str, Union[int, str]]:
         # 起床并写数据
         sleep_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['sleep_time'], '%Y-%m-%d %H:%M:%S')
         in_sleep = now_time - sleep_time
@@ -423,7 +423,7 @@ class MorningManager:
         return False
 
     # 进行晚安并更新数据
-    def night_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> tuple[str, Union[int, str]]:
+    def night_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> Tuple[str, Union[int, str]]:
         # 若之前没有数据就直接创建一个
         if user_id not in self.user_data[group_id].keys():
             self.user_data[group_id][user_id] = {

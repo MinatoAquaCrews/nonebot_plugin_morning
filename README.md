@@ -19,7 +19,7 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="">
-    <img src="https://img.shields.io/badge/release-v0.2.0alpha.1-orange">
+    <img src="https://img.shields.io/badge/release-v0.2.0alpha.2-orange">
   </a>
   
 </p>
@@ -28,15 +28,15 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.2.0-alpha.1
+v0.2.0-alpha.2
 
 ⚠ 适配nonebot2-2.0.0beta.1；适配alpha.16版本参见[alpha.16分支](https://github.com/KafCoppelia/nonebot_plugin_morning/tree/alpha.16)
 
-[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.2.0-alpha.1)
+[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.2.0-alpha.2)
 
 ## 安装
 
-1. 通过`pip`或`nb`安装，该版本为**测试版**；
+1. 通过`pip`或`nb`安装，版本指定`0.2.0a2`，该版本为**测试版**；
 
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`/resource`下，可在`env`内设置`MORNING_PATH`更改：
 

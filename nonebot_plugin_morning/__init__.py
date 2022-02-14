@@ -6,9 +6,9 @@ from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Me
 from nonebot.params import CommandArg
 from .data_source import morning_manager
 
-__morning_vsrsion__ = "0.2.0"
+__morning_vsrsion__ = "v0.2.0a2"
 plugin_notes = f'''
-おはよう！ v{__morning_vsrsion__}
+おはよう！ {__morning_vsrsion__}
 [早安] 早安/哦嗨哟/おはよう
 [晚安] 晚安/こんばん
 [我的作息] 看看自己的作息
