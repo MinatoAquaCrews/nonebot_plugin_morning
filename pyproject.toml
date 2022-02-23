@@ -11,6 +11,7 @@ python = "^3.7.3"
 nonebot2 = "2.0.0-alpha.16"
 nonebot-adapter-cqhttp = "2.0.0-alpha.16"
 nonebot-plugin-apscheduler = "^0.1.2"
+requests = "^2.27.1"
 
 [build-system]
 requires = ["poetry-core"]
