@@ -15,11 +15,11 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="https://github.com/nonebot/nonebot2">
-    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.1-green">
+    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.1+-green">
   </a>
   
   <a href="">
-    <img src="https://img.shields.io/badge/release-v0.2.0alpha.2-orange">
+    <img src="https://img.shields.io/badge/release-v0.2.1-orange">
   </a>
   
 </p>
@@ -28,20 +28,22 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.2.0-alpha.2
+v0.2.1
 
-⚠ 适配nonebot2-2.0.0beta.1；适配alpha.16版本参见[alpha.16分支](https://github.com/KafCoppelia/nonebot_plugin_morning/tree/alpha.16)
+⚠ 适配nonebot2-2.0.0beta.1+；
 
-[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.2.0-alpha.2)
+👉 适配alpha.16版本参见[alpha.16分支](https://github.com/KafCoppelia/nonebot_plugin_morning/tree/alpha.16)
+
+[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.2.1)
 
 ## 安装
 
-1. 通过`pip`或`nb`安装，版本指定`0.2.0a2`，该版本为**测试版**；
+1. 通过`pip`或`nb`安装，版本指定`0.2.1`；
 
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`/resource`下，可在`env`内设置`MORNING_PATH`更改：
 
 ```python
-MORNING_PATH="your-path-to-resource"    # 默认位于os.path.join(os.path.dirname(__file__), "resource")
+MORNING_PATH="your-path-to-resource"
 ```
 
 ## 功能
@@ -52,9 +54,7 @@ MORNING_PATH="your-path-to-resource"    # 默认位于os.path.join(os.path.dirna
 
 3. 分群管理群友作息；
 
-4. *TODO* 分群管理早晚安设置？
-
-5. おはよう！🌈
+4. おはよう！🌈
 
 ## 命令
 
@@ -76,12 +76,12 @@ MORNING_PATH="your-path-to-resource"    # 默认位于os.path.join(os.path.dirna
 
 ## 规则配置
 
-若未手动配置`confg.json`文件（或不存在），则默认写入初始配置：
+**新增** `confg.json`文件已默认写入下述预置配置，当其不存在时则默认下载仓库的预置配置文件：
 
 ```python
 {
     "morning": {
-        "get_up_intime": {      # 是否只能在规定时间起床床
+        "get_up_intime": {      # 是否只能在规定时间起床
             "enable": true,     # 默认开启，若关闭则下面两项无效
             "early_time": 6,    # 允许的最早的起床时间，默认早上6点
             "late_time": 12     # 允许的最晚的起床时间，默认中午12点

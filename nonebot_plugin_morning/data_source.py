@@ -1,16 +1,21 @@
+from attr import has
 import nonebot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from typing import Optional, Union, List, Tuple
 from pathlib import Path
 import datetime
 import os
+from .download import get_preset_config
 try:
     import ujson as json
 except ModuleNotFoundError:
     import json
 
-_MORNING_PATH = nonebot.get_driver().config.morning_path
-MORNING_PATH = os.path.join(os.path.dirname(__file__), "resource") if not _MORNING_PATH else _MORNING_PATH
+global_config = nonebot.get_driver().config
+if not hasattr(global_config, "morning_path"):
+    MORNING_PATH = os.path.join(os.path.dirname(__file__), "resource")
+else:
+    MORNING_PATH = nonebot.get_driver().config.morning_path
 
 mor_switcher = {
     '时限': 'get_up_intime',
@@ -49,16 +54,11 @@ class MorningManager:
                 self.user_data = json.load(f)
 
         if not config_file.exists():
-            with open(config_file, "w", encoding="utf-8") as f:
-                f.write(json.dumps(dict()))
-                f.close()
+            get_preset_config(config_file)
         
         if config_file.exists():
             with open(config_file, "r", encoding="utf-8") as f:
                 self.config = json.load(f)
-            
-            if not self.config:
-                self._init_config()
 
     '''
         初始化用户数据
@@ -73,45 +73,6 @@ class MorningManager:
             }
 
             self.save_data()
-    
-    '''
-        初始化配置文件
-    '''
-    def _init_config(self) -> None:
-        self.config["morning"] = {}
-        self.config["night"] = {}
-        self.config["morning"] = {
-                "get_up_intime": {
-                "enable": True,
-                "early_time": 6,
-                "late_time": 12
-            },
-            "multi_get_up": {
-                "enable": False,
-                "interval": 6
-            },
-            "super_get_up": {
-                "enable": False,
-                "interval": 3
-            }
-        }
-
-        self.config["night"] = {
-                "sleep_intime": {
-                "enable": True,
-                "early_time": 21,
-                "late_time": 6
-            },
-            "good_sleep": {
-                "enable": True,
-                "interval": 6
-            },
-            "deep_sleep": {
-                "enable": False,
-                "interval": 3
-            }
-        }
-        self.save_config()
 
     '''
         查看当前设置

@@ -1,11 +1,10 @@
 [tool.poetry]
 name = "nonebot-plugin-morning"
-version = "0.2.0a2"
+version = "0.2.1"
 description = "Good morning & good night!"
 authors = ["KafCoppelia <k740677208@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "nonebot_plugin_morning"}]
 
 [tool.poetry.dependencies]
 python = "^3.7.3"

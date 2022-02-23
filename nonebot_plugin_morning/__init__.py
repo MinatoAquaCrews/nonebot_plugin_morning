@@ -6,11 +6,11 @@ from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Me
 from nonebot.params import CommandArg
 from .data_source import morning_manager
 
-__morning_vsrsion__ = "v0.2.0a2"
+__morning_vsrsion__ = "v0.2.1"
 plugin_notes = f'''
 おはよう！ {__morning_vsrsion__}
 [早安] 早安/哦嗨哟/おはよう
-[晚安] 晚安/こんばん
+[晚安] 晚安/哦呀斯密/おやすみ
 [我的作息] 看看自己的作息
 [群友作息] 看看今天几个人睡觉或起床了
 [早晚安设置] 查看配置
@@ -25,7 +25,7 @@ plugin_notes = f'''
 
 plugin_help = on_command("早晚安帮助", permission=GROUP, priority=11, block=True)
 morning = on_command("早安", aliases={"哦嗨哟", "おはよう"}, permission=GROUP, priority=11, block=True)
-night = on_command("晚安", aliases={"こんばん"}, permission=GROUP, priority=11, block=True)
+night = on_command("晚安", aliases={"哦呀斯密", "おやすみ"}, permission=GROUP, priority=11, block=True)
 # routine
 my_routine = on_command("我的作息", permission=GROUP, priority=11, block=True)
 fellow_routine = on_command("群友作息", permission=GROUP, priority=11, block=True)
