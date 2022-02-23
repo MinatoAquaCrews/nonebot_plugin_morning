@@ -40,7 +40,7 @@ v0.2.1
 
 1. 通过`pip`或`nb`安装，版本指定`0.2.1`；
 
-2. 用户数据`data.json`及早晚安配置文件`config.json`位于`/resource`下，可在`env`内设置`MORNING_PATH`更改：
+2. 用户数据`data.json`及早晚安配置文件`config.json`位于`./resource`下，可在`env`内设置`MORNING_PATH`更改：
 
 ```python
 MORNING_PATH="your-path-to-resource"
