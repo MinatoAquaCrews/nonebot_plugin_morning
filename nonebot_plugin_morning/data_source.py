@@ -1,5 +1,5 @@
-from attr import has
 import nonebot
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from typing import Optional, Union, List, Tuple
 from pathlib import Path
@@ -54,6 +54,7 @@ class MorningManager:
                 self.user_data = json.load(f)
 
         if not config_file.exists():
+            logger.info("Downloading preset morning config resource...")
             get_preset_config(config_file)
         
         if config_file.exists():
@@ -484,7 +485,7 @@ class MorningManager:
         self._init_data(group_id)
         moring_count = self.user_data[group_id]['today_count']['morning']
         night_count = self.user_data[group_id]['today_count']['night']
-        msg = f'今天已经有{moring_count}位群友起床了，{night_count}群友睡觉了~'
+        msg = f'今天已经有{moring_count}位群友起床了，{night_count}位群友睡觉了~'
 
         return msg
 
