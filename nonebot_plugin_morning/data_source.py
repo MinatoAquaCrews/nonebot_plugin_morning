@@ -15,7 +15,7 @@ global_config = nonebot.get_driver().config
 if not hasattr(global_config, "morning_path"):
     MORNING_PATH = os.path.join(os.path.dirname(__file__), "resource")
 else:
-    MORNING_PATH = nonebot.get_driver().config.morning_path
+    MORNING_PATH = global_config.morning_path
 
 mor_switcher = {
     '时限': 'get_up_intime',

@@ -9,7 +9,7 @@ class DownloadError(Exception):
     pass
 
 def get_preset_config(file_path: Path) -> None:
-    url = f"https://cdn.jsdelivr.net/gh/KafCoppelia/nonebot_plugin_morning@beta.1/nonebot_plugin_morning/resource/config.json"
+    url = f"https://cdn.jsdelivr.net/gh/KafCoppelia/nonebot_plugin_morning@beta/nonebot_plugin_morning/resource/config.json"
     data = requests.get(url).json()
     if data:
         with open(file_path, "w", encoding="utf-8") as f:

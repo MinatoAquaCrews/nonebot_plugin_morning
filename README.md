@@ -15,7 +15,7 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="https://github.com/nonebot/nonebot2">
-    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.1+-green">
+    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.2-green">
   </a>
   
   <a href="">
@@ -30,7 +30,7 @@ _🌈 おはよう！ 🌈_
 
 v0.2.1
 
-⚠ 适配nonebot2-2.0.0beta.1+；
+⚠ 适配nonebot2-2.0.0beta.2；
 
 👉 适配alpha.16版本参见[alpha.16分支](https://github.com/KafCoppelia/nonebot_plugin_morning/tree/alpha.16)
 
@@ -42,9 +42,9 @@ v0.2.1
 
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`./resource`下，可在`env`内设置`MORNING_PATH`更改：
 
-```python
-MORNING_PATH="your-path-to-resource"
-```
+    ```python
+    MORNING_PATH="your-path-to-resource"
+    ```
 
 ## 功能
 
@@ -76,7 +76,7 @@ MORNING_PATH="your-path-to-resource"
 
 ## 规则配置
 
-**新增** `confg.json`文件已默认写入下述预置配置，当其不存在时则默认下载仓库的预置配置文件：
+**新增** `confg.json`文件已默认写入下述配置，当其不存在时则默认下载仓库的预置配置文件：
 
 ```python
 {

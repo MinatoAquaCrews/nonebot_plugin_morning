@@ -84,12 +84,12 @@ async def _(bot: Bot, event: GroupMessageEvent):
 @fellow_routine.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     msg = morning_manager.get_group_routine(event)
-    await fellow_routine.finish(message=msg, at_sender=False)
+    await fellow_routine.finish(msg)
 
 @setting.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     msg = morning_manager.get_current_config()
-    await setting.finish(message=msg, at_sender=False)
+    await setting.finish(msg)
 
 @morning_setting.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -100,7 +100,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
         await morning_on.finish(f"参数太多啦~")
 
     msg = morning_manager.morning_config(args)
-    await morning_setting.finish(message=msg, at_sender=False)
+    await morning_setting.finish(msg)
 
 @morning_on.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -112,7 +112,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     else:
         await morning_on.finish(f"参数太多啦~")
 
-    await morning_on.finish(message=msg, at_sender=False)
+    await morning_on.finish(msg)
 
 @morning_off.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -124,7 +124,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     else:
         await morning_off.finish(f"参数太多啦~")
 
-    await morning_off.finish(message=msg, at_sender=False)
+    await morning_off.finish(msg)
 
 @night_setting.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -135,7 +135,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
         await morning_on.finish(f"参数太多啦~")
     
     msg = morning_manager.night_config(args)
-    await night_setting.finish(message=msg, at_sender=False)
+    await night_setting.finish(msg)
 
 @night_on.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -147,7 +147,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     else:
         await night_on.finish(f"参数太多啦~")
 
-    await night_on.finish(message=msg, at_sender=False)
+    await night_on.finish(msg)
 
 @night_off.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -159,7 +159,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     else:
         await night_off.finish(f"参数太多啦~")
 
-    await night_off.finish(message=msg, at_sender=False)
+    await night_off.finish(msg)
 
 # 重置一天的早安晚安计数
 @scheduler.scheduled_job("cron", hour=0, minute=0)
