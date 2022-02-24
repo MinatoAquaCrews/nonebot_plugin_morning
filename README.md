@@ -10,7 +10,7 @@ _🌈 おはよう！ 🌈_
 </div>
 <p align="center">
   
-  <a href="https://github.com/KafCoppelia/nonebot_plugin_morning/blob/main/LICENSE">
+  <a href="https://github.com/KafCoppelia/nonebot_plugin_morning/blob/beta/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-informational">
   </a>
   
