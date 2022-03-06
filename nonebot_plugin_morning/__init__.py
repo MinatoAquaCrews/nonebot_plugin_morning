@@ -6,7 +6,7 @@ from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Me
 from nonebot.params import CommandArg
 from .data_source import morning_manager
 
-__morning_vsrsion__ = "v0.2.1"
+__morning_vsrsion__ = "v0.2.2"
 plugin_notes = f'''
 おはよう！ {__morning_vsrsion__}
 [早安] 早安/哦嗨哟/おはよう
@@ -97,7 +97,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     if not args:
         await morning_setting.finish("还没输入参数呢~")
     elif args and len(args) > 3:
-        await morning_on.finish(f"参数太多啦~")
+        await morning_on.finish("参数太多啦~")
 
     msg = morning_manager.morning_config(args)
     await morning_setting.finish(msg)
@@ -110,7 +110,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     elif args and len(args) == 1:
         msg = morning_manager.morning_switch(args[0], True)
     else:
-        await morning_on.finish(f"参数太多啦~")
+        await morning_on.finish("参数太多啦~")
 
     await morning_on.finish(msg)
 
@@ -122,7 +122,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     elif args and len(args) == 1:    
         msg = morning_manager.morning_switch(args[0], False)
     else:
-        await morning_off.finish(f"参数太多啦~")
+        await morning_off.finish("参数太多啦~")
 
     await morning_off.finish(msg)
 
@@ -132,7 +132,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     if not args:
         await night_setting.finish("还没输入参数呢~")
     elif args and len(args) > 3:
-        await morning_on.finish(f"参数太多啦~")
+        await morning_on.finish("参数太多啦~")
     
     msg = morning_manager.night_config(args)
     await night_setting.finish(msg)
@@ -145,7 +145,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     elif args and len(args) == 1:    
         msg = morning_manager.night_switch(args[0], True)
     else:
-        await night_on.finish(f"参数太多啦~")
+        await night_on.finish("参数太多啦~")
 
     await night_on.finish(msg)
 
@@ -157,7 +157,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     elif args and len(args) == 1:    
         msg = morning_manager.night_switch(args[0], False)
     else:
-        await night_off.finish(f"参数太多啦~")
+        await night_off.finish("参数太多啦~")
 
     await night_off.finish(msg)
 

@@ -30,16 +30,18 @@ nig_switcher = {
 }
 
 class MorningManager:
-    def __init__(self, file: Optional[Path]):
+    def __init__(self, path: Optional[Path]):
         self.user_data = {}
         self.config = {}
 
-        if not file:
+        if not path:
             data_file = Path(MORNING_PATH) / "data.json"
             config_file = Path(MORNING_PATH) / "config.json"
         else:
-            data_file = file / "data.json"
-            config_file = file / "config.json"
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
+            data_file = path / "data.json"
+            config_file = path / "config.json"
 
         self.data_file = data_file
         self.config_file = config_file
@@ -55,6 +57,10 @@ class MorningManager:
 
         if not config_file.exists():
             logger.info("Downloading preset morning config resource...")
+            with open(config_file, "w", encoding="utf-8") as f:
+                f.write(json.dumps(dict()))
+                f.close()
+            
             get_preset_config(config_file)
         
         if config_file.exists():
@@ -328,6 +334,8 @@ class MorningManager:
                 msg = f'现在不能早安哦，可以早安的时间为{early_time_tmp}时到{late_time_tmp}时~'
                 return msg
 
+        self._init_data(group_id)
+        
         # 当数据里有过这个人的信息就判断:
         if user_id in self.user_data[group_id].keys():
             
