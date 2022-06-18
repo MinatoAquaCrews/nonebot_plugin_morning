@@ -95,26 +95,29 @@ async def _(matcher: Matcher):
     msg = morning_manager.get_current_config()
     await matcher.finish(msg)
 
-def parse_type() -> Coroutine[Any, Any, None]:
+def parse_type(key: str) -> Coroutine[Any, Any, None]:
     '''
         Parser param type
     '''
-    async def _param_parser(matcher: Matcher, state: T_State, input_arg: str = ArgStr("param_type")) -> None:
-        arg: str = input_arg
-        if arg == "取消":
+    async def _param_parser(matcher: Matcher, state: T_State, input_arg: str = ArgStr(key)) -> None:
+        if input_arg == "取消":
             await matcher.finish("操作已取消")
-        elif arg == "时限":
-            state["param_type"] = Param_Type.TIME_LIMIT
+        
+        logger.info(input_arg)
+        
+        arg: str = input_arg
+        if arg == "时限":
+            state[key] = Param_Type.TIME_LIMIT
         elif arg == "多重起床":
-            state["param_type"] = Param_Type.MULTI_GET_UP
+            state[key] = Param_Type.MULTI_GET_UP
         elif arg == "超级亢奋":
-            state["param_type"] = Param_Type.SUPER_GET_UP
+            state[key] = Param_Type.SUPER_GET_UP
         elif arg == "优质睡眠":
-            state["param_type"] = Param_Type.GOOD_SLEEP
+            state[key] = Param_Type.GOOD_SLEEP
         elif arg == "深度睡眠":
-            state["param_type"] = Param_Type.DEEP_SLEEP
+            state[key] = Param_Type.DEEP_SLEEP
         else:
-            await matcher.reject_arg("param_type", "输入配置不合法")
+            await matcher.reject_arg(key, "输入配置不合法")
     
     return _param_parser
 
@@ -124,6 +127,9 @@ def parse_params() -> Coroutine[Any, Any, None]:
     '''
     async def _params_parser(matcher: Matcher, state: T_State, input_args: str = ArgStr("params")) -> None:
         args: List[str] = input_args.split()
+        
+        logger.info(args)
+        
         param_type = state["param_type"]
         if args[0] == "取消":
             await matcher.finish("操作已取消")
@@ -190,7 +196,7 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
 @morning_setting.got(
     "param_type",
     prompt="请选择配置项，可选：时限/多重起床/超级亢奋，输入取消以取消操作",
-    parameterless=[Depends(parse_type())]
+    parameterless=[Depends(parse_type("morning"))]
 )
 async def _(state: T_State, _param_type: Param_Type = Arg()):
     _op_type = state["op_type"]
@@ -207,7 +213,10 @@ async def _(state: T_State, _param_type: Param_Type = Arg()):
     parameterless=[Depends(parse_params())]
 )
 async def _(state: T_State, _param: Union[int, List[int]] = Arg()):
-    _param_type = state["param_type"]
+    _param_type = state["morning"]
+    
+    logger.info(_param_type.value)
+    logger.info(_param)
     
     msg = morning_manager.morning_config(_param_type.value, *_param)
     await morning_setting.finish(msg)
@@ -250,7 +259,7 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
 @night_setting.got(
     "param_type",
     prompt="请选择配置项，可选：时限/优质睡眠/深度睡眠，输入取消以取消操作",
-    parameterless=[Depends(parse_type())]
+    parameterless=[Depends(parse_type("night"))]
 )
 async def _(state: T_State, _param_type: Param_Type = Arg()):
     _op_type = state["op_type"]
@@ -267,7 +276,7 @@ async def _(state: T_State, _param_type: Param_Type = Arg()):
     parameterless=[Depends(parse_params())]
 )
 async def _(state: T_State, _param: Union[int, List[int]] = Arg()):
-    _param_type: Param_Type = state["param_type"]
+    _param_type: Param_Type = state["night"]
     
     logger.info(_param_type.value)
     logger.info(_param)
