@@ -1,168 +1,227 @@
-from nonebot import require
+from typing import Coroutine, Union, Any, List
 from nonebot import logger
-from nonebot import on_command
+from nonebot import on_command, on_regex
+from nonebot.typing import T_State
+from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, GroupMessageEvent
-from nonebot.params import CommandArg
+from nonebot.params import Depends, CommandArg, RegexMatched, Arg, ArgStr
+from nonebot_plugin_apscheduler import scheduler
+from .config import Op_Type, Param_Type
 from .data_source import morning_manager
 
-__morning_vsrsion__ = "v0.2.2"
-plugin_notes = f'''
-おはよう！ {__morning_vsrsion__}
-[早安] 早安/哦嗨哟/おはよう
+__morning_version__ = "v0.3.0a1"
+__morning_notes__ = f'''
+おはよう！ {__morning_version__}
+[早安] 早安/哦哈哟/おはよう
 [晚安] 晚安/哦呀斯密/おやすみ
 [我的作息] 看看自己的作息
-[群友作息] 看看今天几个人睡觉或起床了
-[早晚安设置] 查看配置
+[群友作息] 看看群友的作息
+[早晚安设置] 查看当前配置
+===== 设置 =====
+[早安开启/关闭 xx] 开启/关闭早安的某个配置
+[早安设置 xx x] 设置早安配置的数值
+[晚安开启/关闭 xx] 开启/关闭晚安的某个配置
+[晚安设置 xx x] 设置晚安配置的数值'''.strip()
 
-=== 设置 ===
-[早安开启 xx] 开启某个配置
-[早安关闭 xx] 关闭某个配置
-[早安设置 xx x] 设置数值
-[晚安开启 xx] 开启某个配置
-[晚安关闭 xx] 关闭某个配置
-[晚安设置 xx x] 设置数值'''.strip()
-
-plugin_help = on_command("早晚安帮助", permission=GROUP, priority=11, block=True)
-morning = on_command("早安", aliases={"哦嗨哟", "おはよう"}, permission=GROUP, priority=11, block=True)
-night = on_command("晚安", aliases={"哦呀斯密", "おやすみ"}, permission=GROUP, priority=11, block=True)
+morning = on_command(cmd="早安", aliases={"哦哈哟", "おはよう"}, permission=GROUP, priority=11)
+night = on_command(cmd="晚安", aliases={"哦呀斯密", "おやすみ"}, permission=GROUP, priority=11)
 # routine
-my_routine = on_command("我的作息", permission=GROUP, priority=11, block=True)
-fellow_routine = on_command("群友作息", permission=GROUP, priority=11, block=True)
+my_routine = on_command(cmd="我的作息", permission=GROUP, priority=11)
+group_routine = on_command(cmd="群友作息", permission=GROUP, priority=11)
 # setting
-setting = on_command("早晚安设置", permission=GROUP, priority=11, block=True)
-morning_setting = on_command("早安设置", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-morning_on = on_command("早安开启", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-morning_off = on_command("早安关闭", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-night_setting = on_command("晚安设置", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-night_on = on_command("晚安开启", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-night_off = on_command("晚安关闭", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
-
-scheduler = require("nonebot_plugin_apscheduler").scheduler
-
-@plugin_help.handle()
-async def show_help(bot: Bot, event: GroupMessageEvent):
-    await plugin_help.finish(plugin_notes)
-
+configure = on_command(cmd="早晚安设置", permission=GROUP, priority=11, block=True)
+morning_setting = on_regex(pattern=r"^早安(开启|关闭|设置)$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
+night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=11, block=True)
+    
 @morning.handle()
-async def good_morning(bot: Bot, event: GroupMessageEvent):
-    user_id = event.user_id
-    group_id = event.group_id
-    mem_info = await bot.get_group_member_info(group_id=group_id, user_id=user_id)
-    sex = mem_info['sex']
-    if sex == 'male':
-        sex_str = '少年'
-    elif sex == 'female':
-        sex_str = '少女'
+async def good_morning(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+    args = args.extract_plain_text()
+    if args == "帮助":
+        await morning.finish(__morning_notes__)
+            
+    uid = event.user_id
+    gid = event.group_id
+    mem_info = await bot.get_group_member_info(group_id=gid, user_id=uid)
+    
+    sex = mem_info["sex"]
+    if sex == "male":
+        sex_str = "少年"
+    elif sex == "female":
+        sex_str = "少女"
     else:
-        sex_str = '群友'
+        sex_str = "群友"
 
-    msg = morning_manager.get_morning_msg(sex_str, event)
+    msg = morning_manager.get_morning_msg(str(gid), str(uid), sex_str)
     await morning.finish(message=msg, at_sender=True)
 
 @night.handle()
-async def good_night(bot: Bot, event: GroupMessageEvent):
-    user_id = event.user_id
-    group_id = event.group_id
-    mem_info = await bot.get_group_member_info(group_id=group_id, user_id=user_id)
-    sex = mem_info['sex']
-    if sex == 'male':
-        sex_str = '少年'
-    elif sex == 'female':
-        sex_str = '少女'
+async def good_night(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+    args = args.extract_plain_text()
+    if args == "帮助":
+        await night.finish(__morning_notes__)
+            
+    uid = event.user_id
+    gid = event.group_id
+    mem_info = await bot.get_group_member_info(group_id=gid, user_id=uid)
+    
+    sex = mem_info["sex"]
+    if sex == "male":
+        sex_str = "少年"
+    elif sex == "female":
+        sex_str = "少女"
     else:
-        sex_str = '群友'
+        sex_str = "群友"
 
-    msg = morning_manager.get_night_msg(sex_str, event)
+    msg = morning_manager.get_night_msg(str(gid), str(uid), sex_str)
     await night.finish(message=msg, at_sender=True)
 
 @my_routine.handle()
-async def _(bot: Bot, event: GroupMessageEvent):
-    msg = morning_manager.get_routine(event)
+async def _(event: GroupMessageEvent):
+    gid = str(event.group_id)
+    uid = str(event.user_id)
+    
+    msg = morning_manager.get_my_routine(gid, uid)
     await my_routine.finish(message=msg, at_sender=True)
 
-@fellow_routine.handle()
-async def _(bot: Bot, event: GroupMessageEvent):
-    msg = morning_manager.get_group_routine(event)
-    await fellow_routine.finish(msg)
+@group_routine.handle()
+async def _(event: GroupMessageEvent):
+    gid = str(event.group_id)
+    msg = morning_manager.get_group_routine(gid)
+    await group_routine.finish(msg)
 
-@setting.handle()
-async def _(bot: Bot, event: GroupMessageEvent):
+@configure.handle()
+async def _(matcher: Matcher):
     msg = morning_manager.get_current_config()
-    await setting.finish(msg)
+    await matcher.finish(msg)
+
+def parse_type() -> Coroutine[Any, Any, None]:
+    '''
+        Parser param type
+    '''
+    async def _param_parser(matcher: Matcher, state: T_State, input_arg: str = ArgStr("param_type")) -> None:
+        if input_arg == "取消":
+            await matcher.finish("操作已取消")
+        elif input_arg == "时限":
+            state["param_type"] = Param_Type.TIME_LIMIT
+        elif input_arg == "多重起床":
+            state["param_type"] = Param_Type.MULTI_GET_UP
+        elif input_arg == "超级亢奋":
+            state["param_type"] = Param_Type.SUPER_GET_UP
+        elif input_arg == "优质睡眠":
+            state["param_type"] = Param_Type.GOOD_SLEEP
+        elif input_arg == "深度睡眠":
+            state["param_type"] = Param_Type.DEEP_SLEEP
+        else:
+            await matcher.reject_arg("param_type", "输入配置不合法")
+    
+    return _param_parser
+
+def parse_params() -> Coroutine[Any, Any, None]:
+    '''
+        Parser extra params
+    '''
+    async def _params_parser(matcher: Matcher, state: T_State, input_args: Message = Arg("params")) -> None:
+        args: List[str] = input_args.extract_plain_text().split()
+        param_type = state["param_type"]
+        if args[0] == "取消":
+            await matcher.finish("操作已取消")
+        
+        if len(args) > 1:
+            if param_type != Param_Type.TIME_LIMIT:
+                try:
+                    state["params"] = int(args[0])
+                    await matcher.send("输入参数过多，仅取第一个参数")
+                except ValueError:
+                    await matcher.reject_arg("params", "输入参数必须是纯数字")
+            else:
+                state["params"] = args[:2]
+        
+        if len(args) == 1:
+            if param_type == Param_Type.TIME_LIMIT:
+                await matcher.reject_arg("params", "缺少输入参数")
+            else:
+                try:
+                    state["params"] = int(args[0])
+                except ValueError:
+                    await matcher.reject_arg("params", "输入参数必须是纯数字")
+    
+    return _params_parser
 
 @morning_setting.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await morning_setting.finish("还没输入参数呢~")
-    elif args and len(args) > 3:
-        await morning_on.finish("参数太多啦~")
+async def _(matcher: Matcher, arg: str = RegexMatched()):
+    if arg[-2:] == "开启":
+        matcher.set_arg("op_type", Op_Type.TURN_ON)
+    elif arg[-2:] == "关闭":
+        matcher.set_arg("op_type", Op_Type.TURN_OFF)
+    elif arg[-2:] == "设置":
+        matcher.set_arg("op_type", Op_Type.SETTING)
+    else:
+        await matcher.finish("输入指令不合法，可选：早安开启/关闭/设置")
 
-    msg = morning_manager.morning_config(args)
+@morning_setting.got(
+    "param_type",
+    prompt="请选择配置项，可选：时限/多重起床/超级亢奋，输入取消以取消操作",
+    parameterless=[Depends(parse_type())]
+)
+async def _(state: T_State, _param_type: Param_Type = ArgStr()):
+    _op_type = state["op_type"]
+    if _op_type == Op_Type.TURN_ON:
+        msg = morning_manager.morning_switch(_param_type.value, True)
+        await morning_setting.finish(msg)
+    elif _op_type == Op_Type.TURN_OFF:
+        msg = morning_manager.morning_switch(_param_type.value, False)
+        await morning_setting.finish(msg)
+
+@morning_setting.got(
+    "params",
+    prompt="请输入设置参数，时限配置项请输入允许的最早/晚的睡觉时间（空格间隔），其余配置项请输入一个时间间隔，输入取消以取消操作",
+    parameterless=[Depends(parse_params())]
+)
+async def _(state: T_State, _param: Union[int, List[int]] = Arg()):
+    _param_type = state["param_type"]
+    
+    msg = morning_manager.morning_config(_param_type.value, *_param)
     await morning_setting.finish(msg)
 
-@morning_on.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await morning_on.finish("还没输入参数呢~")
-    elif args and len(args) == 1:
-        msg = morning_manager.morning_switch(args[0], True)
-    else:
-        await morning_on.finish("参数太多啦~")
-
-    await morning_on.finish(msg)
-
-@morning_off.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await morning_off.finish("还没输入参数呢~")
-    elif args and len(args) == 1:    
-        msg = morning_manager.morning_switch(args[0], False)
-    else:
-        await morning_off.finish("参数太多啦~")
-
-    await morning_off.finish(msg)
-
 @night_setting.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await night_setting.finish("还没输入参数呢~")
-    elif args and len(args) > 3:
-        await morning_on.finish("参数太多啦~")
+async def _(matcher: Matcher, arg: str = RegexMatched()):
+    if arg[-2:] == "开启":
+        matcher.set_arg("op_type", Op_Type.TURN_ON)
+    elif arg[-2:] == "关闭":
+        matcher.set_arg("op_type", Op_Type.TURN_OFF)
+    elif arg[-2:] == "设置":
+        matcher.set_arg("op_type", Op_Type.SETTING)
+    else:
+        await matcher.finish("输入指令不合法，可选：晚安开启/关闭/设置")
+        
+@night_setting.got(
+    "param_type",
+    prompt="请选择配置项，可选：时限/优质睡眠/深度睡眠，输入取消以取消操作",
+    parameterless=[Depends(parse_type())]
+)
+async def _(state: T_State, _param_type: Param_Type = ArgStr()):
+    _op_type = state["op_type"]
+    if _op_type == Op_Type.TURN_ON:
+        msg = morning_manager.night_switch(_param_type.value, True)
+        await night_setting.finish(msg)
+    elif _op_type == Op_Type.TURN_OFF:
+        msg = morning_manager.night_switch(_param_type.value, False)
+        await night_setting.finish(msg)
+
+@night_setting.got(
+    "params",
+    prompt="请输入设置参数，时限配置项请输入允许的最早/晚的睡觉时间（空格间隔），其余配置项请输入一个时间间隔，输入取消以取消操作",
+    parameterless=[Depends(parse_params())]
+)
+async def _(state: T_State, _param: Union[int, List[int]] = Arg()):
+    _param_type = state["param_type"]
     
-    msg = morning_manager.night_config(args)
+    msg = morning_manager.night_config(_param_type.value, *_param)
     await night_setting.finish(msg)
-
-@night_on.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await night_on.finish("还没输入参数呢~")
-    elif args and len(args) == 1:    
-        msg = morning_manager.night_switch(args[0], True)
-    else:
-        await night_on.finish("参数太多啦~")
-
-    await night_on.finish(msg)
-
-@night_off.handle()
-async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text().strip().split()
-    if not args:
-        await night_off.finish("还没输入参数呢~")
-    elif args and len(args) == 1:    
-        msg = morning_manager.night_switch(args[0], False)
-    else:
-        await night_off.finish("参数太多啦~")
-
-    await night_off.finish(msg)
-
+        
 # 重置一天的早安晚安计数
-@scheduler.scheduled_job("cron", hour=0, minute=0)
+@scheduler.scheduled_job("cron", hour=0, minute=0, misfire_grace_time=60)
 async def _():
     morning_manager.reset_data()
     logger.info("早晚安已刷新！")

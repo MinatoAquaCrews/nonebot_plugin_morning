@@ -10,16 +10,20 @@ _🌈 おはよう！ 🌈_
 </div>
 <p align="center">
   
-  <a href="https://github.com/KafCoppelia/nonebot_plugin_morning/blob/beta/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-informational">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/blob/beta/LICENSE">
+    <img src="https://img.shields.io/github/license/MinatoAquaCrews/nonebot_plugin_morning?color=blue">
   </a>
   
   <a href="https://github.com/nonebot/nonebot2">
-    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.2-green">
+    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.2+-green">
   </a>
   
-  <a href="">
-    <img src="https://img.shields.io/badge/release-v0.2.2-orange">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a1">
+    <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange">
+  </a>
+
+  <a href="https://www.codefactor.io/repository/github/MinatoAquaCrews/nonebot_plugin_morning">
+    <img src="https://img.shields.io/codefactor/grade/github/MinatoAquaCrews/nonebot_plugin_morning/main?color=red">
   </a>
   
 </p>
@@ -28,17 +32,15 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.2.2
+v0.3.0a1
 
 ⚠ 适配nonebot2-2.0.0beta.2；
 
-👉 适配alpha.16版本参见[alpha.16分支](https://github.com/KafCoppelia/nonebot_plugin_morning/tree/alpha.16)
-
-[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.2.2)
+[更新日志](https://github.com/KafCoppelia/nonebot_plugin_morning/releases/tag/v0.3.0a1)
 
 ## 安装
 
-1. 通过`pip`或`nb`安装，版本指定`0.2.2`；
+1. 通过`pip`或`nb`安装`；
 
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`./resource`下，可在`env`内设置`MORNING_PATH`更改：
 
@@ -58,15 +60,15 @@ v0.2.2
 
 ## 命令
 
-1. 早晚安：早安/晚安，记录睡眠时间；
+1. 早晚安：[早安/晚安]，记录睡眠时间；
 
-2. 查看我的作息：我的作息；
+2. 查看我的作息：[我的作息]；
 
-3. 查看群友作息：群友作息，看看今天几个人睡觉或起床了；
+3. 查看群友作息：[群友作息]，看看今天几个人睡觉或起床了；
 
-4. 查看配置当前安晚安规则：早晚安设置；
+4. 查看当前安早晚安配置（规则）：[早晚安设置]；
 
-5. [群管或群主或超管] 设置命令
+5. [管理员或超管] 设置命令
 
     - 开启/关闭某个配置：早安/晚安开启/关闭某项功能；
 
@@ -139,7 +141,7 @@ v0.2.2
     
     - [早安设置 xx x] 设置某个配置的参数，xx可选值目前有 [时限 / 多重起床 / 超级亢奋]，x可选值为0到24的整数；
       
-      ※ 当设置时限时需要两个参数，命令为：[早安设置 时限 x y]，当不是时限时只需一个参数，命令为：[早安设置 xx x]
+      ※ 当设置时限时需要两个参数，命令为：[早安设置 时限 x y]，当不是[时限]时只需一个参数，命令为：[早安设置 xx x]
 
 3. 晚安配置
     
