@@ -1,10 +1,10 @@
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from typing import Any
-import httpx
 from nonebot import get_driver
 from nonebot import logger
 from enum import Enum
+import httpx
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -59,9 +59,9 @@ async def download_url(url: str) -> Any:
 @driver.on_startup
 async def _() -> None:
     if not morning_config.morning_path.exists():
-        morning_config.what2eat_path.mkdir(parents=True, exist_ok=True)
+        morning_config.morning_path.mkdir(parents=True, exist_ok=True)
     
-    config_json_path: Path = morning_config.what2eat_path / "config.json"
+    config_json_path: Path = morning_config.morning_path / "config.json"
     if not config_json_path.exists():
         url = "https://raw.fastgit.org/MinatoAquaCrews/nonebot_plugin_morning/beta/nonebot_plugin_morning/resource/config.json"
         
@@ -72,7 +72,7 @@ async def _() -> None:
             
             logger.info(f"Get file config.json from repo")
     
-    data_json_path: Path = morning_config.what2eat_path / "morning.json"
+    data_json_path: Path = morning_config.morning_path / "morning.json"
     if not data_json_path.exists():
         with open(data_json_path, 'w', encoding='utf-8') as f:
             json.dump(dict(), f, ensure_ascii=False, indent=4)

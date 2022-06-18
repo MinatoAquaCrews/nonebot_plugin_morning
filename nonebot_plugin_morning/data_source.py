@@ -1,5 +1,5 @@
 from nonebot.adapters.onebot.v11 import MessageSegment
-from typing import Union, Dict, Optional, Tuple
+from typing import Union, List, Dict, Optional, Tuple
 from pathlib import Path
 from .config import *
 import datetime
@@ -41,7 +41,7 @@ class MorningManager:
         # morning_config
         get_up_intime = self._config["morning"]['get_up_intime']["enable"]
         if get_up_intime:
-            msg = msg + '\n是否要求规定时间内起床：是\n - 最早允许起床时间：' + str(self._config["morning"]['get_up_intime']['early_time']) + '点\n - 最晚允许起床时间：' + str(self.config["morning"]['get_up_intime']['late_time']) + '点'
+            msg = msg + '\n是否要求规定时间内起床：是\n - 最早允许起床时间：' + str(self._config["morning"]['get_up_intime']["early_time"]) + '点\n - 最晚允许起床时间：' + str(self._config["morning"]['get_up_intime']["late_time"]) + '点'
         else:
             msg = msg + '\n是否要求规定时间内起床：否'
             
@@ -58,10 +58,10 @@ class MorningManager:
             msg = msg + '\n是否允许超级亢奋(即睡眠时长很短)：否\n - 允许的最短睡觉时长：' + str(self._config["morning"]["super_get_up"]["interval"]) + '小时'
         
         # night_config
-        sleep_intime = self._config["night"]['sleep_intime']["enable"]
+        sleep_intime = self._config["night"]["sleep_intime"]["enable"]
         if sleep_intime:
-            msg = msg + '\n是否要求规定时间内睡觉：是\n - 最早允许睡觉时间：' + str(self._config["night"]['sleep_intime']['early_time']) + \
-                '点\n - 最晚允许睡觉时间：第二天早上' + str(self._config["night"]['sleep_intime']['late_time']) + '点'
+            msg = msg + '\n是否要求规定时间内睡觉：是\n - 最早允许睡觉时间：' + str(self._config["night"]["sleep_intime"]["early_time"]) + \
+                '点\n - 最晚允许睡觉时间：第二天早上' + str(self._config["night"]["sleep_intime"]["late_time"]) + '点'
         else:
             msg = msg + '\n是否要求规定时间内睡觉：否'
         
@@ -128,7 +128,7 @@ class MorningManager:
         
         self._save_data()
 
-    def morning_config(self, _mor_setting: str, *args) -> MessageSegment:
+    def morning_config(self, _mor_setting: str, *args: List[int]) -> MessageSegment:
         '''
             Config about morning
         '''
@@ -160,7 +160,7 @@ class MorningManager:
         
         return MessageSegment.text(msg)
 
-    def night_config(self, _nig_setting: str, *args) -> MessageSegment:
+    def night_config(self, _nig_setting: str, *args: List[int]) -> MessageSegment:
         '''
             Config about night
         '''
@@ -193,7 +193,7 @@ class MorningManager:
         return MessageSegment.text(msg)
 
     # ------------------------------ Morning Judgement------------------------------ #
-    def _judge_mor_time(_early_time: int, _late_time: int, now_time: datetime.datetime) -> bool:
+    def _judge_mor_time(self, _early_time: int, _late_time: int, now_time: datetime.datetime) -> bool:
         '''
             判断早安时间
         '''
@@ -234,6 +234,7 @@ class MorningManager:
         second = secs - day * 3600 * 24 - hour * 3600 - minute * 60
         
         # 睡觉时间小于24小时就同时给出睡眠时长
+        in_sleep_tmp: Union[str, int] = 0
         if day == 0:
             in_sleep_tmp = str(int(hour)) + '时' + str(int(minute)) + '分' + str(int(second)) + '秒'
         else:
@@ -254,12 +255,13 @@ class MorningManager:
             Return morning info
         '''
         self._load_config()
+        msg: str = ""
         
         # 若开启规定时间早安，则判断该时间是否允许早安
         now_time = datetime.datetime.now()
         if self._config["morning"]['get_up_intime']["enable"]:
-            _early_time = self._config["morning"]['get_up_intime']['early_time']
-            _late_time = self._config["morning"]['get_up_intime']['late_time']
+            _early_time: int = self._config["morning"]['get_up_intime']["early_time"]
+            _late_time: int = self._config["morning"]['get_up_intime']["late_time"]
             if not self._judge_mor_time(_early_time, _late_time, now_time):
                 msg = f'现在不能早安哦，可以早安的时间为{_early_time}时到{_late_time}时~'
                 return MessageSegment.text(msg)
@@ -270,7 +272,7 @@ class MorningManager:
         if uid in self._morning[gid]:
             # 若关闭连续多次早安，则判断在设定时间内是否多次早安
             if not self._config["morning"]["multi_get_up"]["enable"] and self._morning[gid][uid]["get_up_time"] != 0:
-                interval = self._config["morning"]["multi_get_up"]["interval"]
+                interval: int = self._config["morning"]["multi_get_up"]["interval"]
                 if self._judge_have_mor(gid, uid, now_time, interval):
                     msg = f'{interval}小时内你已经早安过了哦~'
             
@@ -294,8 +296,7 @@ class MorningManager:
         return MessageSegment.text(msg)
 
     # ------------------------------ Night Judgement ------------------------------ #
-    
-    def _judge_sle_time(_early_time: int, _late_time: int, now_time: datetime.datetime) -> bool:
+    def _judge_sle_time(self, _early_time: int, _late_time: int, now_time: datetime.datetime) -> bool:
         '''
             判断晚安时间
         '''
@@ -341,13 +342,9 @@ class MorningManager:
         else:
             self._morning[gid][uid]['sleep_time'] = now_time.strftime("%Y-%m-%d %H:%M:%S")
             self._morning[gid][uid]['night_count'] += 1
-        
+          
         # 当上次起床时间不是初始值0,就计算清醒的时长
-        if day == 0:
-            in_day_tmp = str(int(hour)) + '时' + str(int(minute)) + '分' + str(int(second)) + '秒'
-        else:
-            in_day_tmp = 0
-            
+        in_day_tmp: Union[str, int] = 0
         if self._morning[gid][uid]["get_up_time"] != 0:
             get_up_time = datetime.datetime.strptime(self._morning[gid][uid]["get_up_time"], '%Y-%m-%d %H:%M:%S')
             in_day = now_time - get_up_time
@@ -356,6 +353,11 @@ class MorningManager:
             hour = (secs - day * 3600 * 24) // 3600
             minute = (secs - day * 3600 * 24 - hour * 3600) // 60
             second = secs - day * 3600 * 24 - hour * 3600 - minute * 60
+            
+            if day == 0:
+                in_day_tmp = str(int(hour)) + '时' + str(int(minute)) + '分' + str(int(second)) + '秒'
+            else:
+                in_day_tmp = 0
                 
         # 判断是今天第几个睡觉的
         self._morning[gid]["today_count"]["night"] += 1
@@ -368,12 +370,13 @@ class MorningManager:
             Return good night info
         '''
         self._load_config()
+        msg: str = ""
         
         # 若开启规定时间晚安，则判断该时间是否允许晚安
         now_time = datetime.datetime.now()
-        if self._config["night"]['sleep_intime']["enable"]:
-            _early_time = self._config["night"]['sleep_intime']['early_time']
-            _late_time = self._config["night"]['sleep_intime']['late_time']
+        if self._config["night"]["sleep_intime"]["enable"]:
+            _early_time: int = self._config["night"]["sleep_intime"]["early_time"]
+            _late_time: int = self._config["night"]["sleep_intime"]["late_time"]
             if not self._judge_sle_time(_early_time, _late_time, now_time):
                 msg = f'现在不能晚安哦，可以晚安的时间为{_early_time}时到第二天早上{_late_time}时~'
                 return MessageSegment.text(msg)
@@ -387,27 +390,28 @@ class MorningManager:
                 interval: int = self._config["night"]["good_sleep"]["interval"]
                 if self._judge_have_sle(gid, uid, now_time, interval):
                     msg = f'{interval}小时内你已经晚安过了哦~'
+                    return MessageSegment.text(msg)
             
             # 若关闭深度睡眠，则判断不在睡觉的时长是否小于设定时长
-            elif not self._config["night"]["deep_sleep"]["enable"] and self._morning[gid][uid]["get_up_time"] != 0:
+            if not self._config["night"]["deep_sleep"]["enable"] and self._morning[gid][uid]["get_up_time"] != 0:
                 interval = self._config["night"]["deep_sleep"]["interval"]
                 if self._judge_deep_sleep(gid, uid, now_time, interval):
                     msg = f"睡这么久还不够？现在不能晚安哦~"
+                    return MessageSegment.text(msg)
 
-            else:
-                # 当数据里没有这个人或者前面条件均符合的时候，允许晚安
-                num, in_day = self.night_and_update(gid, uid, now_time)
-                if isinstance(in_day, int):
-                    msg = f'晚安成功！你是今天第{num}个睡觉的{sex_str}！'
-                else:
-                    msg = f'晚安成功！你今天的清醒时长为{in_day}，\n你是今天第{num}个睡觉的{sex_str}！'
+        # 当数据里没有这个人或者前面条件均符合的时候，允许晚安
+        num, in_day = self.night_and_update(gid, uid, now_time)
+        if isinstance(in_day, int):
+            msg = f'晚安成功！你是今天第{num}个睡觉的{sex_str}！'
+        else:
+            msg = f'晚安成功！你今天的清醒时长为{in_day}，\n你是今天第{num}个睡觉的{sex_str}！'
             
         return MessageSegment.text(msg)
     
     # ------------------------------ Routine ------------------------------ #
     def get_my_routine(self, gid: str, uid: str) -> MessageSegment:
         self._init_group_data(gid)
-        self._load_data(gid)
+        self._load_data()
         
         if uid in self._morning[gid]:
             get_up_time = self._morning[gid][uid]["get_up_time"]
@@ -415,13 +419,13 @@ class MorningManager:
             morning_count = self._morning[gid][uid]['morning_count']
             night_count = self._morning[gid][uid]['night_count']
             
-            msg += f'您的作息数据如下：'
+            msg += f'你的作息数据如下：'
             msg += f'\n最近一次起床时间为{get_up_time}'
             msg += f'\n最近一次睡觉时间为{sleep_time}'
             msg += f'\n一共起床了{morning_count}次'
             msg += f'\n一共睡觉了{night_count}次'
         else:
-            msg = '您还没有睡觉起床过呢！暂无数据~'
+            msg = '你还没有睡觉起床过呢！暂无数据~'
         
         return MessageSegment.text(msg)
 
