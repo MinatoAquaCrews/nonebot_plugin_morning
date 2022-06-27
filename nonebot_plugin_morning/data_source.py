@@ -252,7 +252,7 @@ class MorningManager:
 
     def get_morning_msg(self, gid: str, uid: str, sex_str: str) -> MessageSegment:
         '''
-            Return morning info
+            Return good morning info
         '''
         self._load_config()
         msg: str = ""
@@ -266,32 +266,35 @@ class MorningManager:
                 msg = f'现在不能早安哦，可以早安的时间为{_early_time}时到{_late_time}时~'
                 return MessageSegment.text(msg)
 
-        self._load_data()
+        self._init_group_data(gid)
         
         # 当数据里有过这个人的信息就判断:
         if uid in self._morning[gid]:
+            
             # 若关闭连续多次早安，则判断在设定时间内是否多次早安
             if not self._config["morning"]["multi_get_up"]["enable"] and self._morning[gid][uid]["get_up_time"] != 0:
                 interval: int = self._config["morning"]["multi_get_up"]["interval"]
                 if self._judge_have_mor(gid, uid, now_time, interval):
                     msg = f'{interval}小时内你已经早安过了哦~'
+                    return MessageSegment.text(msg)
             
             # 若关闭超级亢奋，则判断睡眠时长是否小于设定时间
-            elif not self._config["morning"]["super_get_up"]["enable"]:
+            if not self._config["morning"]["super_get_up"]["enable"]:
                 interval = self._config["morning"]["super_get_up"]["interval"]
                 if self._judge_super_get_up(gid, uid, now_time, interval):
                     msg = f'你可猝死算了吧？现在不能早安哦~'
-            else: 
-                # 当前面条件均符合的时候，允许早安
-                num, in_sleep = self._morning_and_update(now_time, gid, uid)
-                if isinstance(in_sleep, int):
-                    msg = f'早安成功！你是今天第{num}个起床的{sex_str}！'
-                else:
-                    msg = f'早安成功！你的睡眠时长为{in_sleep}，\n你是今天第{num}个起床的{sex_str}！'
-        
+                    return MessageSegment.text(msg)
+                  
         # 若没有说明他还没睡过觉呢
         else:
             msg = '你还没睡过觉呢！不能早安哦~'
+            
+        # 当前面条件均符合的时候，允许早安
+        num, in_sleep = self._morning_and_update(now_time, gid, uid)
+        if isinstance(in_sleep, int):
+            msg = f'早安成功！你是今天第{num}个起床的{sex_str}！'
+        else:
+            msg = f'早安成功！你的睡眠时长为{in_sleep}，\n你是今天第{num}个起床的{sex_str}！'
  
         return MessageSegment.text(msg)
 
@@ -385,6 +388,7 @@ class MorningManager:
 
         # 当数据里有过这个人的信息就判断:
         if uid in self._morning[gid]:
+            
             # 若开启优质睡眠，则判断在设定时间内是否多次晚安
             if self._config["night"]["good_sleep"]["enable"]:
                 interval: int = self._config["night"]["good_sleep"]["interval"]

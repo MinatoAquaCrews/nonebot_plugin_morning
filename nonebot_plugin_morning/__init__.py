@@ -10,7 +10,7 @@ from nonebot_plugin_apscheduler import scheduler
 from .config import Op_Type, Param_Type
 from .data_source import morning_manager
 
-__morning_version__ = "v0.3.0a1"
+__morning_version__ = "v0.3.0a2"
 __morning_notes__ = f'''
 おはよう！ {__morning_version__}
 [早安] 早安/哦哈哟/おはよう
