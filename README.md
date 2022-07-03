@@ -18,7 +18,7 @@ _🌈 おはよう！ 🌈_
     <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.2+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a2">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a3">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
@@ -32,11 +32,11 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.3.0a2
+v0.3.0a3
 
 ⚠ 适配nonebot2-2.0.0beta.2+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a2)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a3)
 
 ## 安装
 
@@ -58,24 +58,24 @@ v0.3.0a2
 
     ``` python
     {
-        "123456789": {                  # 群号
-            "today_count": {            # 群统计
-                "morning": 1,           # 群早安次数
-                "night": 0              # 群晚安次数
-            },
-            "123456": {                 # 群友QQ号
-                "get_up_time": "1234",  # 群友起床时间
-                "morning_count": 3,     # 群友共早安次数
-                "sleep_time": "1234",   # 群友睡觉时间
-                "night_count": 3        # 群友共晚安次数
-            },
-            "654321": {
-                "get_up_time": "4321",
-                "morning_count": 5,
-                "sleep_time": "4321",
-                "night_count": 5 
-            }
+      "123456789": {              # 群号
+        "today_count": {          # 群统计
+          "morning": 1,           # 群早安次数
+          "night": 0              # 群晚安次数
+        },
+        "123456": {               # 群友QQ号
+          "get_up_time": "1234",  # 群友起床时间
+          "morning_count": 3,     # 群友共早安次数
+          "sleep_time": "1234",   # 群友睡觉时间
+          "night_count": 3        # 群友共晚安次数
+        },
+        "654321": {
+          "get_up_time": "4321",
+          "morning_count": 5,
+          "sleep_time": "4321",
+          "night_count": 5 
         }
+      }
     }
     ```
 

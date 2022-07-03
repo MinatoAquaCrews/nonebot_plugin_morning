@@ -1,8 +1,7 @@
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from typing import Any
-from nonebot import get_driver
-from nonebot import logger
+from nonebot import get_driver, logger
 from enum import Enum
 import httpx
 try:
@@ -76,3 +75,7 @@ async def _() -> None:
     if not data_json_path.exists():
         with open(data_json_path, 'w', encoding='utf-8') as f:
             json.dump(dict(), f, ensure_ascii=False, indent=4)
+
+__all__ = [
+    morning_config
+]
