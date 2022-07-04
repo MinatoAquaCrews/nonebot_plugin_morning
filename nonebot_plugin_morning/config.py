@@ -75,7 +75,3 @@ async def _() -> None:
     if not data_json_path.exists():
         with open(data_json_path, 'w', encoding='utf-8') as f:
             json.dump(dict(), f, ensure_ascii=False, indent=4)
-
-__all__ = [
-    morning_config
-]

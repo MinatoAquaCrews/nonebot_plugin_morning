@@ -232,7 +232,7 @@ class MorningManager:
         sleep_time: datetime = datetime.datetime.strptime(self._morning[gid][uid]['sleep_time'], '%Y-%m-%d %H:%M:%S')
         
         # 上次睡觉时间和现在时间相差大于24小时，则返回True
-        return sleep_time + datetime.timedelta(hours=24) < now_time
+        return now_time - sleep_time > datetime.timedelta(hours=24)
 
     def _morning_and_update(self, now_time: datetime.datetime, gid: str, uid: str) -> Tuple[str, Union[str, int]]:
         '''
