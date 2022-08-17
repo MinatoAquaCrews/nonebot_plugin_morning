@@ -15,10 +15,10 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="https://github.com/nonebot/nonebot2">
-    <img src="https://img.shields.io/badge/nonebot2-2.0.0beta.2+-green">
+    <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a3">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a4">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
@@ -28,15 +28,13 @@ _🌈 おはよう！ 🌈_
   
 </p>
 
-</p>
-
 ## 版本
 
-v0.3.0a3
+v0.3.0a4
 
-⚠ 适配nonebot2-2.0.0beta.2+
+⚠ 适配nonebot2-2.0.0beta.3+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a3)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a4)
 
 ## 安装
 
@@ -144,19 +142,19 @@ v0.3.0a3
 
     - 早安：
 
-      是否要求规定时间内起床：是
+		是否要求规定时间内起床：是
 
-      是否允许连续多次起床：否
+		是否允许连续多次起床：否
 
-      是否允许超级亢奋(即睡眠时长很短)：否
+		是否允许超级亢奋(即睡眠时长很短)：否
 
     - 晚安：
 
-      是否要求规定时间内睡觉：是
+		是否要求规定时间内睡觉：是
 
-      是否开启优质睡眠：是
+		是否开启优质睡眠：是
       
-      是否允许深度睡眠(即清醒时长很短)：否
+		是否允许深度睡眠(即清醒时长很短)：否
 
 2. 早安配置
     
@@ -166,11 +164,13 @@ v0.3.0a3
     
     - [早安设置 xx x] 设置某个配置的参数，配置项有：时限/多重起床/超级亢奋；（x可选值为0到24的整数）
       
-      ⚠ 配置参数时，可一次性输入规定的参数，也可通过引导一步步设置
+		⚠ 配置参数时，可一次性输入规定的参数，也可通过引导一步步设置
 	  
-	  ⚠ 当**设置时限**时需要两个参数，命令为：[早安设置 时限 x y]，其余只需一个参数，例如，[早安设置 超级亢奋 5]
+		⚠ 当**设置时限**时需要两个参数，命令为：[早安设置 时限 x y]，其余只需一个参数，例如，[早安设置 超级亢奋 5]
 
-	  ⚠ 配置项具体含义参见上述规则配置
+		⚠ 配置项具体含义参见上述规则配置
+		
+		⚠ 当配置某个选项时，会自动启用该选项
 
 3. 晚安配置
     
@@ -180,7 +180,7 @@ v0.3.0a3
     
     - [晚安设置 xx x] 设置某个配置的参数，配置项有：时限/优质睡眠/深度睡眠；（x可选值为0到24的整数）
       
-      ⚠ 注意事项参考早安配置
+		⚠ 注意事项参考早安配置
 
 ## 本插件改自
 

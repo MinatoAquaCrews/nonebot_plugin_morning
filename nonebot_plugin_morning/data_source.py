@@ -10,10 +10,10 @@ except ModuleNotFoundError:
 
 class MorningManager:
     def __init__(self):
-        self._morning: Dict[str, Dict[str, Dict[str, Union[str, int]]]] = {}
+        self._morning: Dict[str, Dict[str, Dict[str, Union[str, int]]]] = dict()
         self._morning_path: Path = morning_config.morning_path / "morning.json"
         
-        self._config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = {}
+        self._config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = dict()
         self._config_path: Path = morning_config.morning_path / "config.json"
 
     def _init_group_data(self, gid: str) -> None:
@@ -35,7 +35,7 @@ class MorningManager:
 
     def get_current_config(self) -> MessageSegment:
         '''
-            CHeck current configure
+            Return current configure
         '''
         msg = '早安晚安设置如下：'
         self._load_config()
@@ -87,17 +87,12 @@ class MorningManager:
             Change and save new state of setting
         '''
         self._load_config()
-        
-        try:
-            self._config[day_or_night][_setting]["enable"] = new_state
-            self._save_config()
-            msg = "配置更新成功！"
-        except KeyError as e:
-            msg = f"配置更新失败！错误原因：{e}"
+        self._config[day_or_night][_setting]["enable"] = new_state
+        self._save_config()
 
-        return msg
+        return "配置更新成功！"
 
-    def _change_set_time(self, _day_or_night: str, _setting: str, _interval_or_early_time: int, _late_time: Optional[int]) -> str:
+    def _change_set_time(self, _day_or_night: str, _setting: str, _interval_or_early_time: int, _late_time: Optional[int] = None) -> str:
         '''
             Change time interval
         '''
@@ -108,16 +103,23 @@ class MorningManager:
             if isinstance(_late_time, int):
                 late_time = _late_time
             else:
-                return "配置更新失败！"
+                return "配置更新失败：缺少参数！"
+            
             self._config[_day_or_night][_setting]["early_time"] = early_time
             self._config[_day_or_night][_setting]["late_time"] = late_time
         else:
             interval = _interval_or_early_time
             self._config[_day_or_night][_setting]["interval"] = interval
         
+        msg = "配置更新成功！"
+        
+        if self._config[_day_or_night][_setting]["enable"] == False:
+            self._config[_day_or_night][_setting]["enable"] = True
+            msg += "且此项设置已启用！"
+        
         self._save_config()
         
-        return "配置更新成功！"
+        return msg
     
     def reset_data(self) -> None:
         '''
@@ -181,7 +183,7 @@ class MorningManager:
             if interval < 0 or interval > 24:
                 msg = "错误！您设置的时间间隔未在0-24之间，要求：0 <= 时间 <= 24"
             else:
-                msg = self._change_set_time("night", _setting, interval)
+                msg = self._change_set_time("night", _setting, interval, None)
         
         return MessageSegment.text(msg)
 
