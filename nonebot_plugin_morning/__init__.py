@@ -1,6 +1,5 @@
 from typing import Coroutine, Any, List
 from nonebot import logger, require, on_command, on_regex
-from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, GroupMessageEvent
@@ -10,7 +9,7 @@ from .data_source import morning_manager
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-__morning_version__ = "v0.3.0a4"
+__morning_version__ = "v0.3.0a5"
 __morning_notes__ = f'''
 おはよう！ {__morning_version__}
 [早安] 早安/哦哈哟/おはよう
@@ -42,7 +41,7 @@ async def good_morning(bot: Bot, event: GroupMessageEvent, args: Message = Comma
             
     uid = event.user_id
     gid = event.group_id
-    mem_info = await bot.get_group_member_info(group_id=gid, user_id=uid)
+    mem_info = await bot.call_api("get_group_member_info", group_id=gid, user_id=uid)
     
     sex = mem_info["sex"]
     if sex == "male":
@@ -63,7 +62,7 @@ async def good_night(bot: Bot, event: GroupMessageEvent, args: Message = Command
             
     uid = event.user_id
     gid = event.group_id
-    mem_info = await bot.get_group_member_info(group_id=gid, user_id=uid)
+    mem_info = await bot.call_api("get_group_member_info", group_id=gid, user_id=uid)
     
     sex = mem_info["sex"]
     if sex == "male":

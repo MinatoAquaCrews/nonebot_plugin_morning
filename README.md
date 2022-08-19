@@ -18,7 +18,7 @@ _🌈 おはよう！ 🌈_
     <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a4">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a5">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
@@ -30,11 +30,11 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.3.0a4
+v0.3.0a5
 
 ⚠ 适配nonebot2-2.0.0beta.3+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a4)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a5)
 
 ## 安装
 
@@ -42,8 +42,8 @@ v0.3.0a4
 
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`./resource`下，可在`env`内设置`MORNING_PATH`更改：
 
-    ```python
-    MORNING_PATH="your-path-to-resource"  # For example: ./my_data/morning_resource/
+    ``` python
+    MORNING_PATH="path-to-your-resource"  # For example: ./my_data/morning_resource/
     ```
 
 ## 功能
@@ -54,25 +54,25 @@ v0.3.0a4
 
 3. 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
 
-    ``` python
+    ``` json
     {
-        "123456789": {                  # 群号
-            "today_count": {            # 群统计
-                "morning": 1,           # 群早安次数
-                "night": 0              # 群晚安次数
+        "123456789": {                                          # 群号
+            "today_count": {                                    # 群统计
+                "good_morning": 1,                              # 群友每日早安人数
+                "good_night": 0,                                # 群友每日晚安人数
+                "weekly_sleeping_king": "123456"                # 群周睡眠时长最长，睡眠大王
             },
-            "123456": {                 # 群友QQ号
-                "get_up_time": "1234",  # 群友起床时间
-                "morning_count": 3,     # 群友共早安次数
-                "sleep_time": "1234",   # 群友睡觉时间
-                "night_count": 3        # 群友共晚安次数
-            },
-            "654321": {
-                "get_up_time": "4321",
-                "morning_count": 5,
-                "sleep_time": "4321",
-                "night_count": 5 
-            }           
+            "123456": {                                         # 群友QQ号
+                "good_morning_time": "2022-01-01 07:08:09",     # 群友起床时间
+                "good_night_time": "2022-01-01 22:33:44",       # 群友睡觉时间                 
+                "night_count": 1,                               # 群友总晚安次数
+                "morning_count": 0,                             # 群友总早安次数
+                "weekly_morning_count": 0,                      # 群友周早安天数
+                "weekly_night_count": 0,                        # 群友周晚安天数
+                "weekly_sleep_time": [],                        # 群友周每天睡眠时长
+                "latest_sleep_time": "2021-12-31 23:59:59",     # 群友周晚安最晚的时间
+                "earliest_get_up_time": "2021-12-31 06:07:08"   # 群友周早起最早的时间
+            }       
         }
     }
     ```
@@ -103,36 +103,36 @@ v0.3.0a4
 
 ⚠ 不确保下载成功
 
-``` python
+``` json
 {
     "morning": {
-        "get_up_intime": {      # 是否只能在规定时间起床
-            "enable": true,     # 默认开启，若关闭则下面两项无效
-            "early_time": 6,    # 允许的最早的起床时间，默认早上6点
-            "late_time": 12     # 允许的最晚的起床时间，默认中午12点
+        "good_morning_intime": {    # 是否只能在规定时间起床
+            "enable": true,         # 默认开启，若关闭则下面两项无效
+            "early_time": 6,        # 允许的最早的起床时间，默认早上6点
+            "late_time": 12         # 允许的最晚的起床时间，默认中午12点
         },
-        "multi_get_up": {       # 是否允许多次起床
-            "enable": false,    # 默认不允许，若允许则下面一项无效
-            "interval": 6       # 两次起床间隔的时间，小于这个时间就不允许起床
+        "multi_get_up": {           # 是否允许多次起床
+            "enable": false,        # 默认不允许，若允许则下面一项无效
+            "interval": 6           # 两次起床间隔的时间，小于这个时间就不允许起床
         },
-        "super_get_up": {       # 是否允许超级亢奋
-            "enable": false,    # 默认不允许，若允许则下面一项无效
-            "interval": 3       # 这次起床和上一次睡觉的时间间隔，小于这个时间就不允许起床，不怕猝死？给我睡！
+        "super_get_up": {           # 是否允许超级亢奋，即睡眠时长很短
+            "enable": false,        # 默认不允许，若允许则下面一项无效
+            "interval": 3           # 这次起床和上一次睡觉的时间间隔，小于这个时间就不允许起床，不怕猝死？给我睡！
         }
     },
     "night": {
-        "sleep_intime": {       # 是否只能在规定时间睡觉
-            "enable": true,     # 默认开启，若关闭则下面两项无效
-            "early_time": 21,   # 允许的最早的睡觉时间，默认晚上21点
-            "late_time": 6      # 允许的最晚的睡觉时间，默认次日早上6点
+        "good_night_intime": {      # 是否只能在规定时间睡觉
+            "enable": true,         # 默认开启，若关闭则下面两项无效
+            "early_time": 21,       # 允许的最早的睡觉时间，默认晚上21点
+            "late_time": 6          # 允许的最晚的睡觉时间，默认次日早上6点
         },
-        "good_sleep": {         # 是否开启优质睡眠
-            "enable": true,     # 默认开启，若关闭则下面一项无效
-            "interval": 6       # 两次睡觉间隔的时间，小于这个时间就不允许睡觉
+        "good_sleep": {             # 是否开启优质睡眠
+            "enable": true,         # 默认开启，若关闭则下面一项无效
+            "interval": 6           # 两次睡觉间隔的时间，小于这个时间就不允许睡觉
         },
-        "deep_sleep": {         # 是否允许深度睡眠
-            "enable": false,    # 默认不允许，若允许则下面一项无效
-            "interval": 3       # 这次睡觉和上一次起床的时间间隔，小于这个时间就不允许睡觉，睡个锤子，快起床！
+        "deep_sleep": {             # 是否允许深度睡眠，即清醒时长很短
+            "enable": false,        # 默认不允许，若允许则下面一项无效
+            "interval": 3           # 这次睡觉和上一次起床的时间间隔，小于这个时间就不允许睡觉，睡个锤子，快起床！
         }
     }
 }
