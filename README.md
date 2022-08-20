@@ -56,22 +56,27 @@ v0.3.0a5
 
     ``` json
     {
-        "123456789": {                                          # 群号
-            "today_count": {                                    # 群统计
-                "good_morning": 1,                              # 群友每日早安人数
-                "good_night": 0,                                # 群友每日晚安人数
-                "weekly_sleeping_king": "123456"                # 群周睡眠时长最长，睡眠大王
+        "123456789": {                                      # 群号
+            "today_count": {                                # 群统计
+                "good_morning": 1,                          # 群友每日早安人数
+                "good_night": 0                             # 群友每日晚安人数
             },
-            "123456": {                                         # 群友QQ号
-                "good_morning_time": "2022-01-01 07:08:09",     # 群友起床时间
-                "good_night_time": "2022-01-01 22:33:44",       # 群友睡觉时间                 
-                "night_count": 1,                               # 群友总晚安次数
-                "morning_count": 0,                             # 群友总早安次数
-                "weekly_morning_count": 0,                      # 群友周早安天数
-                "weekly_night_count": 0,                        # 群友周晚安天数
-                "weekly_sleep_time": [],                        # 群友周每天睡眠时长
-                "latest_sleep_time": "2021-12-31 23:59:59",     # 群友周晚安最晚的时间
-                "earliest_get_up_time": "2021-12-31 06:07:08"   # 群友周早起最早的时间
+            # 群友个人作息统计
+            "123456": {                                     # 群友QQ号
+                "daily": {
+                    "morning_time": "2022-01-01 07:08:09",  # 群友起床时间
+                    "night_time": "2022-01-01 22:33:44"     # 群友睡觉时间
+                },
+                "weekly": {
+                    "weekly_morning_count": 0,              # 群友周早安天数
+                    "weekly_night_count": 0,                # 群友周晚安天数
+                    "lastweek_morning_count": 0,
+                    "lastweek_night_count": 0
+                },
+                "total": {
+                    "night_count": 1,                       # 群友总晚安次数
+                    "morning_count": 0                      # 群友总早安次数
+                }
             }       
         }
     }

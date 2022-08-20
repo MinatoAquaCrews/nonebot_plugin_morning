@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Tuple
 
 def is_later(today: str, yesterday: str) -> bool:
     return datetime.strptime(today, "%Y-%m-%d %H:%M:%S") - datetime.strptime(yesterday, "%Y-%m-%d %H:%M:%S") > timedelta(hours=24)
@@ -35,3 +36,14 @@ def is_TimeinInterval(_datetime: str, now_time: datetime, interval: int) -> bool
             True: 则未隔日
     '''
     return now_time - datetime.strptime(_datetime, '%Y-%m-%d %H:%M:%S') < timedelta(hours=interval)
+
+def get_time_tuple(time_interval: timedelta) -> Tuple[int, int, int, int]:
+    secs: int = time_interval.seconds()
+    days: int = secs // (3600 * 24)
+    hours: int = int((secs - days * 3600 * 24) // 3600)
+    minutes: int = int((secs - days * 3600 * 24 - hours * 3600) // 60)
+    seconds: int = int(secs - days * 3600 * 24 - hours * 3600 - minutes * 60)
+    
+    return days, hours, minutes, seconds
+
+#TODO: A cimpatible transfer from old morning data to new version's

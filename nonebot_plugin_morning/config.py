@@ -12,13 +12,13 @@ class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"
     
 mor_switcher = {
-    "时限": "good_morning_intime",
+    "时限": "morning_intime",
     "多重起床": "multi_get_up",
     "超级亢奋": "super_get_up"
 }
 
 nig_switcher = {
-    "时限": "good_night_intime",
+    "时限": "night_intime",
     "优质睡眠": "good_sleep",
     "深度睡眠": "deep_sleep"
 }
