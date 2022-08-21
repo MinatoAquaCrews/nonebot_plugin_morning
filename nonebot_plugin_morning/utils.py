@@ -1,8 +1,27 @@
 from datetime import datetime, timedelta
-from typing import Tuple
 
-def is_later(today: str, yesterday: str) -> bool:
-    return datetime.strptime(today, "%Y-%m-%d %H:%M:%S") - datetime.strptime(yesterday, "%Y-%m-%d %H:%M:%S") > timedelta(hours=24)
+class clocktime(timedelta):
+    
+    def __init__(self, days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0):
+        self._hours = hours
+        self._minutes = minutes
+    
+    @property
+    def hours(self):
+        """hours"""
+        return self._hours
+    
+    @property
+    def minutes(self):
+        """minutes"""
+        return self._minutes
+    
+
+def is_later(_time1: str, _time2: str) -> bool:
+    '''
+        Return True if time #1 is later 24 hours than time #2
+    '''
+    return datetime.strptime(_time1, "%Y-%m-%d %H:%M:%S") - datetime.strptime(_time2, "%Y-%m-%d %H:%M:%S") > timedelta(hours=24)
     
 def is_MorTimeinRange(early_time: int, late_time: int, now_time: datetime) -> bool:
     '''
@@ -37,13 +56,13 @@ def is_TimeinInterval(_datetime: str, now_time: datetime, interval: int) -> bool
     '''
     return now_time - datetime.strptime(_datetime, '%Y-%m-%d %H:%M:%S') < timedelta(hours=interval)
 
-def get_time_tuple(time_interval: timedelta) -> Tuple[int, int, int, int]:
-    secs: int = time_interval.seconds()
-    days: int = secs // (3600 * 24)
-    hours: int = int((secs - days * 3600 * 24) // 3600)
-    minutes: int = int((secs - days * 3600 * 24 - hours * 3600) // 60)
-    seconds: int = int(secs - days * 3600 * 24 - hours * 3600 - minutes * 60)
-    
-    return days, hours, minutes, seconds
+#TODO: A compatible transfer from old morning data to new version's
 
-#TODO: A cimpatible transfer from old morning data to new version's
+__all__ = [
+    clocktime, is_later, is_MorTimeinRange, is_NigTimeinRange, is_TimeinInterval
+]
+
+if __name__ == "__main__":
+    c1 = clocktime(days=1, hours=2, minutes=3, seconds=4)
+    c2 = clocktime(days=0, hours=3, minutes=4, seconds=5)
+    print(c1.hours)

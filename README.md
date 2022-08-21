@@ -43,7 +43,7 @@ v0.3.0a5
 2. 用户数据`data.json`及早晚安配置文件`config.json`位于`./resource`下，可在`env`内设置`MORNING_PATH`更改：
 
     ``` python
-    MORNING_PATH="path-to-your-resource"  # For example: ./my_data/morning_resource/
+    MORNING_PATH="path-to-your-resource"    # For example: ./my_data/morning_resource/
     ```
 
 ## 功能
@@ -57,25 +57,35 @@ v0.3.0a5
     ``` json
     {
         "123456789": {                                      # 群号
-            "today_count": {                                # 群统计
-                "good_morning": 1,                          # 群友每日早安人数
-                "good_night": 0                             # 群友每日晚安人数
+            "group_count": {                                # 群统计
+                "daily": {
+                    "good_morning": 1,                      # 群每日早安人数
+                    "good_night": 0                         # 群每日晚安人数
+                },
+                "weekly": {
+
+                }
             },
             # 群友个人作息统计
             "123456": {                                     # 群友QQ号
                 "daily": {
-                    "morning_time": "2022-01-01 07:08:09",  # 群友起床时间
-                    "night_time": "2022-01-01 22:33:44"     # 群友睡觉时间
+                    "morning_time": "2022-01-01 07:08:09",  # 每日早安时间
+                    "night_time": "2022-01-01 22:33:44"     # 每日晚安时间
                 },
                 "weekly": {
-                    "weekly_morning_count": 0,              # 群友周早安天数
-                    "weekly_night_count": 0,                # 群友周晚安天数
-                    "lastweek_morning_count": 0,
-                    "lastweek_night_count": 0
+                    "weekly_morning_count": 0,              # 周早安天数
+                    "weekly_night_count": 0,                # 周晚安天数
+                    "weekly_sleep": 0,                      # 周睡眠时长
+                    "lastweek_morning_count": 0,            # 上周早安天数（暂存）
+                    "lastweek_night_count": 0,              # 上周晚安天数（暂存）
+                    "lastweek_sleep": 0,                    # 上周睡眠时长（暂存）
+                    "lastweek_latest_night_time": 0,        # 上周晚安最晚的时间（暂存）
+                    "lastweek_earliest_morning_time": 0     # 上周起最早的时间（暂存）
                 },
                 "total": {
-                    "night_count": 1,                       # 群友总晚安次数
-                    "morning_count": 0                      # 群友总早安次数
+                    "night_count": 1,                       # 总晚安次数
+                    "morning_count": 0,                     # 总早安次数
+                    "total_sleep": 0                        # 总睡眠时间
                 }
             }       
         }
@@ -111,7 +121,7 @@ v0.3.0a5
 ``` json
 {
     "morning": {
-        "good_morning_intime": {    # 是否只能在规定时间起床
+        "morning_intime": {         # 是否只能在规定时间起床
             "enable": true,         # 默认开启，若关闭则下面两项无效
             "early_time": 6,        # 允许的最早的起床时间，默认早上6点
             "late_time": 12         # 允许的最晚的起床时间，默认中午12点
@@ -126,7 +136,7 @@ v0.3.0a5
         }
     },
     "night": {
-        "good_night_intime": {      # 是否只能在规定时间睡觉
+        "night_intime": {           # 是否只能在规定时间睡觉
             "enable": true,         # 默认开启，若关闭则下面两项无效
             "early_time": 21,       # 允许的最早的睡觉时间，默认晚上21点
             "late_time": 6          # 允许的最晚的睡觉时间，默认次日早上6点

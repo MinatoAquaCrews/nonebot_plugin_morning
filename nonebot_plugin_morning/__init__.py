@@ -4,6 +4,7 @@ from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, GroupMessageEvent
 from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
+from .config import driver
 from .data_source import morning_manager
 
 require("nonebot_plugin_apscheduler")
@@ -305,8 +306,30 @@ async def _(matcher: Matcher):
     
     await night_setting.finish(msg)
         
-# 重置一天的早安晚安计数
+# 每日零点重置早晚安计数
 @scheduler.scheduled_job("cron", hour=0, minute=0, misfire_grace_time=60)
-async def _():
-    morning_manager.reset_data()
+async def daily_refresh():
+    morning_manager.daily_refresh()
     logger.info("早晚安已刷新！")
+
+# 每周一零点统计部分周数据
+@scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="1", misfire_grace_time=60)
+async def monday_refresh():
+    morning_manager.weekly_data_refresh()
+
+# 每周一最晚早安时间，统计每周睡眠数据
+@driver.on_startup
+async def weekly_refresh_jobs():
+    # TODO check this on_startup sequence
+    threshold_hour: int = morning_manager.get_refresh_time()
+    if threshold_hour != -1:
+        scheduler.add_job(
+            morning_manager.weekly_sleep_time_refresh(),
+            "cron",
+            id="weekly_sleep_time_refresh_scheduler",
+            replace_existing=True,
+            hour=threshold_hour,
+            minute=0,
+            day_of_week="1",
+            misfire_grace_time=60
+        )
