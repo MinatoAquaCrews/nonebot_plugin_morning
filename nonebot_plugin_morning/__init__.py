@@ -2,7 +2,7 @@ from typing import Coroutine, Any, List
 from nonebot import logger, require, on_command, on_regex
 from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, MessageSegment, GroupMessageEvent
 from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
 from .config import driver
 from .data_source import morning_manager
@@ -26,19 +26,21 @@ __morning_notes__ = f'''
 
 morning = on_command(cmd="早安", aliases={"哦哈哟", "おはよう"}, permission=GROUP, priority=12)
 night = on_command(cmd="晚安", aliases={"哦呀斯密", "おやすみ"}, permission=GROUP, priority=12)
+
 # routine
 my_routine = on_command(cmd="我的作息", permission=GROUP, priority=12)
 group_routine = on_command(cmd="群友作息", permission=GROUP, priority=12)
+
 # setting
 configure = on_command(cmd="早安设置", aliases={"晚安设置", "早晚安设置"}, permission=GROUP, priority=11, block=True)
 morning_setting = on_regex(pattern=r"^早安(开启|关闭|设置)( (时限|多重起床|超级亢奋)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
 night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)( (时限|优质睡眠|深度睡眠)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
     
 @morning.handle()
-async def good_morning(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     args = args.extract_plain_text()
     if args == "帮助":
-        await morning.finish(__morning_notes__)
+        await matcher.finish(__morning_notes__)
             
     uid = event.user_id
     gid = event.group_id
@@ -53,16 +55,16 @@ async def good_morning(bot: Bot, event: GroupMessageEvent, args: Message = Comma
         sex_str = "群友"
 
     msg = morning_manager.get_morning_msg(str(gid), str(uid), sex_str)
-    await morning.finish(message=msg, at_sender=True)
+    await matcher.finish(message=msg, at_sender=True)
 
 @night.handle()
-async def good_night(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def good_night(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     args = args.extract_plain_text()
     if args == "帮助":
-        await night.finish(__morning_notes__)
+        await matcher.finish(__morning_notes__)
             
-    uid = event.user_id
-    gid = event.group_id
+    uid: int = event.user_id
+    gid: int = event.group_id
     mem_info = await bot.call_api("get_group_member_info", group_id=gid, user_id=uid)
     
     sex = mem_info["sex"]
@@ -74,21 +76,28 @@ async def good_night(bot: Bot, event: GroupMessageEvent, args: Message = Command
         sex_str = "群友"
 
     msg = morning_manager.get_night_msg(str(gid), str(uid), sex_str)
-    await night.finish(message=msg, at_sender=True)
+    await matcher.finish(message=msg, at_sender=True)
 
 @my_routine.handle()
-async def _(event: GroupMessageEvent):
+async def _(matcher: Matcher, event: GroupMessageEvent):
     gid = str(event.group_id)
     uid = str(event.user_id)
     
     msg = morning_manager.get_my_routine(gid, uid)
-    await my_routine.finish(message=msg, at_sender=True)
+    await matcher.finish(message=msg, at_sender=True)
 
 @group_routine.handle()
-async def _(event: GroupMessageEvent):
-    gid = str(event.group_id)
-    msg = morning_manager.get_group_routine(gid)
-    await group_routine.finish(msg)
+async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
+    gid = event.group_id
+    morning_count, night_count, uid = morning_manager.get_group_routine(str(gid))
+    msg: str = f"今天已经有{morning_count}位群友早安了，{night_count}位群友晚安了~"
+    
+    if uid:
+        mem_info = await bot.call_api("get_group_member_info", group_id=gid, user_id=int(uid))
+        nickname: str = mem_info["card"] if mem_info["card"] else mem_info["nickname"]
+        msg += f"\n上周睡觉大王是群友：{nickname}，再接再厉～"
+    
+    await matcher.finish(MessageSegment.text(msg))
 
 @configure.handle()
 async def _(matcher: Matcher):
@@ -315,7 +324,7 @@ async def daily_refresh():
 # 每周一零点统计部分周数据
 @scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="1", misfire_grace_time=60)
 async def monday_refresh():
-    morning_manager.weekly_data_refresh()
+    morning_manager.weekly_night_refresh()
 
 # 每周一最晚早安时间，统计每周睡眠数据
 @driver.on_startup
@@ -324,9 +333,9 @@ async def weekly_refresh_jobs():
     threshold_hour: int = morning_manager.get_refresh_time()
     if threshold_hour != -1:
         scheduler.add_job(
-            morning_manager.weekly_sleep_time_refresh(),
+            morning_manager.weekly_scheduler_refresh,
             "cron",
-            id="weekly_sleep_time_refresh_scheduler",
+            id="weekly_scheduler_refresh",
             replace_existing=True,
             hour=threshold_hour,
             minute=0,

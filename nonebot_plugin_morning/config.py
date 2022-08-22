@@ -3,10 +3,7 @@ from pydantic import BaseModel, Extra
 from typing import Optional
 from nonebot import get_driver, logger
 import httpx
-try:
-    import ujson as json
-except ModuleNotFoundError:
-    import json
+import json
 
 class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"

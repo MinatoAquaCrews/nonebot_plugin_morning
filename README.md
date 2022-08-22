@@ -54,7 +54,7 @@ v0.3.0a5
 
 3. 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
 
-    ``` json
+    ``` python
     {
         "123456789": {                                      # 群号
             "group_count": {                                # 群统计
@@ -63,7 +63,7 @@ v0.3.0a5
                     "good_night": 0                         # 群每日晚安人数
                 },
                 "weekly": {
-
+                    "sleeping_king": "123456"               # 群上周睡觉大王
                 }
             },
             # 群友个人作息统计
@@ -79,12 +79,12 @@ v0.3.0a5
                     "lastweek_morning_count": 0,            # 上周早安天数（暂存）
                     "lastweek_night_count": 0,              # 上周晚安天数（暂存）
                     "lastweek_sleep": 0,                    # 上周睡眠时长（暂存）
-                    "lastweek_latest_night_time": 0,        # 上周晚安最晚的时间（暂存）
-                    "lastweek_earliest_morning_time": 0     # 上周起最早的时间（暂存）
+                    "lastweek_earliest_morning_time": 0,    # 上周早安最早的时间（暂存）
+                    "lastweek_latest_night_time": 0         # 上周晚安最晚的时间（暂存）
                 },
                 "total": {
-                    "night_count": 1,                       # 总晚安次数
                     "morning_count": 0,                     # 总早安次数
+                    "night_count": 1,                       # 总晚安次数
                     "total_sleep": 0                        # 总睡眠时间
                 }
             }       
@@ -118,7 +118,7 @@ v0.3.0a5
 
 ⚠ 不确保下载成功
 
-``` json
+``` python
 {
     "morning": {
         "morning_intime": {         # 是否只能在规定时间起床
