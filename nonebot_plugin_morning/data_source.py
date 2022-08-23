@@ -13,7 +13,7 @@ from apscheduler.jobstores.base import JobLookupError
 
 class MorningManager:
     def __init__(self):
-        self._morning: Dict[str, Dict[str, Dict[str, Dict[str, Union[str, int, datetime]]]]] = dict()
+        self._morning: Dict[str, Dict[str, Dict[str, Dict[str, Union[str, int, datetime, List[int]]]]]] = dict()
         self._morning_path: Path = morning_config.morning_path / "morning.json"
         
         self._config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = dict()
@@ -173,7 +173,7 @@ class MorningManager:
         self._load_data()
         
         for gid in self._morning:
-            _max_sleep_time: int = 0
+            _max_sleep_time: List[int] = [0, 0, 0, 0]
             _sleeping_king_uid: str = ""
             
             for uid in self._morning[gid]:
@@ -181,8 +181,9 @@ class MorningManager:
                 self._morning[gid][uid]["weekly"]["lastweek_sleep"] = self._morning[gid][uid]["weekly"]["weekly_sleep"]
                 
                 self._morning[gid][uid]["weekly"]["weekly_morning_count"] = 0
-                self._morning[gid][uid]["weekly"]["weekly_sleep"] = 0
+                self._morning[gid][uid]["weekly"]["weekly_sleep"] = [0, 0, 0, 0]
                 
+                # Compare two lists, day > hrs > mins / secs
                 if self._morning[gid][uid]["weekly"]["lastweek_sleep"] > _max_sleep_time:
                     _max_sleep_time = self._morning[gid][uid]["weekly"]["lastweek_sleep"]
                     _sleeping_king_uid = uid
@@ -280,10 +281,12 @@ class MorningManager:
         '''
             Morning & update data
         '''
+        self._load_data()
+        
         # 起床并写数据
         sleep_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
         in_sleep: timedelta = now_time - sleep_time
-        _, hours, minutes, seconds = total_seconds2tuple_time(int(in_sleep.total_seconds()))
+        days, hours, minutes, seconds = total_seconds2tuple_time(int(in_sleep.total_seconds()))
         
         # 睡觉时间小于24小时就同时给出睡眠时长，记录；否则隔日
         in_sleep_tmp: Union[str, int] = 0
@@ -292,11 +295,9 @@ class MorningManager:
             in_sleep_tmp = 0
         else:
             in_sleep_tmp = f"{hours}时{minutes}分{seconds}秒"
-            self._morning[gid][uid]["weekly"]["weekly_sleep"] += int(in_sleep.total_seconds())
-            self._morning[gid][uid]["total"]["total_sleep"] += int(in_sleep.total_seconds())
+            sleeptime_update(self._morning[gid][uid]["weekly"]["weekly_sleep"], [days, hours, minutes, seconds])
+            sleeptime_update(self._morning[gid][uid]["weekly"]["total_sleep"], [days, hours, minutes, seconds])
 
-        self._load_data()
-        
         # Daily morning time
         self._morning[gid][uid]["daily"]["morning_time"] = now_time
         # Weekly morning count add
@@ -304,12 +305,19 @@ class MorningManager:
         # Total morning count add
         self._morning[gid][uid]["total"]["morning_count"] += 1
         
-        # If weekly morning time is later than daily's, update
-        if not is_later(self._morning[gid][uid]["daily"]["morning_time"], self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"]):
-            self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"] = self._morning[gid][uid]["daily"]["morning_time"]
+        lastweek_emt: Union[int, str] = self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"]
+        
+        # If it is integer, means no data
+        if isinstance(lastweek_emt, int):
+            self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"] = now_time
+        else:
+            # If weekly morning time is later than daily's, update
+            if not is_later(self._morning[gid][uid]["daily"]["morning_time"], self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"]):
+                self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"] = now_time
         
         # 判断是今天第几个起床的
         self._morning[gid]["group_count"]["daily"]["good_morning"] += 1
+        
         self._save_data()
 
         return self._morning[gid]["group_count"]["daily"]["good_morning"], in_sleep_tmp
@@ -333,27 +341,29 @@ class MorningManager:
 
         self._init_group_data(gid)
         
-        # 当数据里有过这个人的信息就判断：是否隔日
-        last_sleep_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
-        if uid in self._morning[gid] and last_sleep_time - now_time < timedelta(hours=24):
+        # 当数据里有过这个人的信息
+        if uid in self._morning[gid]:
+            # 判断是否隔日
+            last_sleep_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+            if last_sleep_time - now_time < timedelta(hours=24):
             
-            # 若关闭连续多次早安，则判断在设定时间内是否多次早安
-            if not self._config["morning"]["multi_get_up"]["enable"] and self._morning[gid][uid]["daily"]["morning_time"] != 0:
-                interval: int = self._config["morning"]["multi_get_up"]["interval"]
-                morning_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+                # 若关闭连续多次早安，则判断在设定时间内是否多次早安
+                if not self._config["morning"]["multi_get_up"]["enable"] and self._morning[gid][uid]["daily"]["morning_time"] != 0:
+                    interval: int = self._config["morning"]["multi_get_up"]["interval"]
+                    morning_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+                    
+                    if now_time - morning_time < timedelta(hours=interval):
+                        msg = f"{interval}小时内你已经早安过了哦~"
+                        return MessageSegment.text(msg)
                 
-                if now_time - morning_time < timedelta(hours=interval):
-                    msg = f"{interval}小时内你已经早安过了哦~"
-                    return MessageSegment.text(msg)
-            
-            # 若关闭超级亢奋，则判断睡眠时长是否小于设定时间
-            if not self._config["morning"]["super_get_up"]["enable"]:
-                interval: int = self._config["morning"]["super_get_up"]["interval"]
-                night_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
-                
-                if now_time - night_time < timedelta(hours=interval):
-                    msg = "你可猝死算了吧？现在不能早安哦~"
-                    return MessageSegment.text(msg)
+                # 若关闭超级亢奋，则判断睡眠时长是否小于设定时间
+                if not self._config["morning"]["super_get_up"]["enable"]:
+                    interval: int = self._config["morning"]["super_get_up"]["interval"]
+                    night_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+                    
+                    if now_time - night_time < timedelta(hours=interval):
+                        msg = "你可猝死算了吧？现在不能早安哦~"
+                        return MessageSegment.text(msg)
                   
         # 否则说明：他还没睡过觉、或为隔日早安
         else:
@@ -387,17 +397,17 @@ class MorningManager:
                     "weekly": {
                         "weekly_morning_count": 0,          # Weekly good-morning count,                RESET at the late time of good-morning every Monday
                         "weekly_night_count": 1,            # Weekly good-night count,                  RESET at 0 A.M. every Monday
-                        "weekly_sleep": 0,                  # Weekly sleeping time,                     RESET at the late time of good-morning every Monday
+                        "weekly_sleep": [0, 0, 0, 0],       # Weekly sleeping time, list of days/hrs/mins/secs, RESET at the late time of good-morning every Monday
                         "lastweek_morning_count": 0,        # Good-morning count of last week,          REFRESH at the late time of good-morning every Monday
                         "lastweek_night_count": 0,          # Good-night count of last week,            REFRESH at 0 A.M. every Monday
-                        "lastweek_sleep": 0,                # Sleeping time of last week,               REFRESH at the late time of good-morning every Monday
+                        "lastweek_sleep": [0, 0, 0, 0],     # Sleeping time of last week, list of days/hrs/mins/secs, REFRESH at the late time of good-morning every Monday
                         "lastweek_earliest_morning_time": 0,# Earliest good-morning time of last week,  REFRESH at a new daily good-morning time in
                         "lastweek_latest_night_time": 0     # Latest good-night time of last week,      REFRESH at a new daily good-night time in
                     },
                     "total": {
                         "morning_count": 0,                 # Total good-morning count, never RESET
                         "night_count": 1,                   # Total good-night count, never RESET
-                        "total_sleep": 0                    # Total sleeping time, never RESET
+                        "total_sleep": [0, 0, 0, 0]         # Total sleeping time, list of days/hrs/mins/secs, REFRESH at every valid good-morning
                     }
                 }
             })
@@ -413,13 +423,19 @@ class MorningManager:
             # Total night count add
             self._morning[gid][uid]["total"]["night_count"] += 1
             
-            # If daily sleep time is later than weekly's, update
-            if is_later(self._morning[gid][uid]["daily"]["night_time"], self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"]):
-                self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = self._morning[gid][uid]["daily"]["night_time"]
+            lastweek_lnt: Union[int, str] = self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"]
+        
+            # If it is integer, means no data
+            if isinstance(lastweek_lnt, int):
+                self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = now_time
+            else:
+                # If daily sleep time is later than weekly's, update
+                if is_later(self._morning[gid][uid]["daily"]["night_time"], self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"]):
+                    self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = now_time
           
         # 当上次起床时间非0，计算清醒时长
-        in_day_tmp: Union[str, int] = 0
         if self._morning[gid][uid]["daily"].get("morning_time", 0) != 0:
+            in_day_tmp: Union[str, int] = 0
             get_up_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
             in_day: timedelta = now_time - get_up_time
             _, hours, minutes, seconds = total_seconds2tuple_time(int(in_day.total_seconds()))
@@ -431,6 +447,7 @@ class MorningManager:
 
         # 判断是今天第几个睡觉的
         self._morning[gid]["group_count"]["daily"]["good_night"] += 1
+        
         self._save_data()
 
         return self._morning[gid]["group_count"]["daily"]["good_night"], in_day_tmp
@@ -499,9 +516,7 @@ class MorningManager:
             # Total info
             morning_count: int = self._morning[gid][uid]["total"]["morning_count"]
             night_count: int = self._morning[gid][uid]["total"]["night_count"]
-            total_sleep: int = self._morning[gid][uid]["total"]["total_sleep"]
-            
-            sleep_days, sleep_hours, sleep_minutes, sleep_seconds = total_seconds2tuple_time(total_sleep)
+            total_sleep: List[int] = self._morning[gid][uid]["total"]["total_sleep"]
             
             msg = "你的作息数据如下："
             msg += f"\n最近一次早安时间为{get_up_time}"
@@ -521,8 +536,7 @@ class MorningManager:
                 
                 # When now time is later than the late time of morning time of Monday, the sleep times are refreshed
                 if threshold_hour != -1 and is_later_oclock(now_time, threshold_hour):
-                        lastweek_sleep: int = self._morning[gid][uid]["weekly"]["lastweek_sleep"]
-                        lw_days, lw_hours, lw_minutes, lw_seconds = total_seconds2tuple_time(lastweek_sleep)
+                        lastweek_sleep: List[int] = self._morning[gid][uid]["weekly"]["lastweek_sleep"]
                         
                         lastweek_lnt_date: datetime = datetime.strptime(self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"], "%Y-%m-%d %H:%M:%S")
                         lastweek_lnt: time = datetime.strptime(lastweek_lnt_date, "%Y-%m-%d %H:%M:%S").time()
@@ -532,7 +546,7 @@ class MorningManager:
                         lastweek_emt: time = datetime.strptime(lastweek_emt_date, "%Y-%m-%d %H:%M:%S").time()
                         earliest_day: int = datetime.strptime(lastweek_emt_date, "%Y-%m-%d %H:%M:%S").weekday()
                         
-                        msg += f"\n上周睡眠时间为{lw_days}天{lw_hours}时{lw_minutes}分{lw_seconds}秒"
+                        msg += f"\n上周睡眠时间为{lastweek_sleep[0]}天{lastweek_sleep[1]}时{lastweek_sleep[2]}分{lastweek_sleep[3]}秒"
                         msg += f"\n上周最晚晚安时间是周{week_list[latest_day]} {lastweek_lnt}"
                         msg += f"\n上周最早早安时间是周{week_list[earliest_day]} {lastweek_emt}"
             
@@ -546,7 +560,7 @@ class MorningManager:
                 
             msg += f"\n一共早安了{morning_count}次"
             msg += f"\n一共晚安了{night_count}次"
-            msg += f"\n一共睡眠了{sleep_days}天{sleep_hours}时{sleep_minutes}分{sleep_seconds}秒"
+            msg += f"\n一共睡眠了{total_sleep[0]}天{total_sleep[1]}时{total_sleep[2]}分{total_sleep[3]}秒"
         else:
             msg = "你本周还没有早安晚安过呢！暂无数据~"
         

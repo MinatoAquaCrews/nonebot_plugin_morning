@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, date
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import json
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -9,8 +9,8 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
         if isinstance(obj, date):
             return obj.strftime("%Y-%m-%d")
- 
-        return super(DateTimeEncoder, self).default(obj)    # json.JSONEncoder.default(self, obj)
+        
+        return json.JSONEncoder.default(self, obj)
 
 def is_later(time1: Union[str, datetime], time2: Union[str, datetime]) -> bool:
     '''
@@ -56,5 +56,9 @@ def total_seconds2tuple_time(secs: int) -> Tuple[int, int, int, int]:
     seconds: int = secs - days * 3600 * 24 - hours * 3600 - minutes * 60
     
     return days, hours, minutes, seconds
+
+def sleeptime_update(_l: List[int], _lnew: List[int]) -> None:
+    for i in range(len(_lnew)):
+        _l[i] += _lnew[i]
 
 #TODO: A compatible transfer from old morning data to new version's
