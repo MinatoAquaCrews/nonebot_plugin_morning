@@ -14,7 +14,7 @@ class DateTimeEncoder(json.JSONEncoder):
 
 def is_later(time1: Union[str, datetime], time2: Union[str, datetime]) -> bool:
     '''
-        Return True if time #1 is later than time #2 of the time part
+        Return True if time #1 is later than time #2 of time part.
     '''
     _time1: datetime = datetime.strptime(time1, "%Y-%m-%d %H:%M:%S") if isinstance(time1, str) else time1
     _time2: datetime = datetime.strptime(time2, "%Y-%m-%d %H:%M:%S") if isinstance(time2, str) else time2

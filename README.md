@@ -52,7 +52,7 @@ v0.3.0a5
 
 2. 群管及超管可设置早安时限、晚安时限、优质睡眠、深度睡眠等，参见规则配置；
 
-3. 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
+3. 🔥 **重磅更新** 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
 
     ``` python
     {
@@ -60,7 +60,7 @@ v0.3.0a5
             "group_count": {                                # 群统计
                 "daily": {
                     "good_morning": 1,                      # 群每日早安人数
-                    "good_night": 0                         # 群每日晚安人数
+                    "good_night": 1                         # 群每日晚安人数
                 },
                 "weekly": {
                     "sleeping_king": "123456"               # 群上周睡觉大王
@@ -73,24 +73,26 @@ v0.3.0a5
                     "night_time": "2022-01-01 22:33:44"     # 每日晚安时间
                 },
                 "weekly": {
-                    "weekly_morning_count": 0,              # 周早安天数
-                    "weekly_night_count": 0,                # 周晚安天数
-                    "weekly_sleep": 0,                      # 周睡眠时长
-                    "lastweek_morning_count": 0,            # 上周早安天数（暂存）
-                    "lastweek_night_count": 0,              # 上周晚安天数（暂存）
-                    "lastweek_sleep": 0,                    # 上周睡眠时长（暂存）
+                    "weekly_morning_count": 1,              # 周早安天数
+                    "weekly_night_count": 1,                # 周晚安天数
+                    "weekly_sleep": [0, 7, 8, 9],           # 周睡眠时长，列表形式：天/时/分/秒
+                    "lastweek_morning_count": 1,            # 上周早安天数（暂存）
+                    "lastweek_night_count": 1,              # 上周晚安天数（暂存）
+                    "lastweek_sleep": [0, 7, 8, 9],         # 上周睡眠时长，列表形式（暂存）
                     "lastweek_earliest_morning_time": 0,    # 上周早安最早的时间（暂存）
                     "lastweek_latest_night_time": 0         # 上周晚安最晚的时间（暂存）
                 },
                 "total": {
-                    "morning_count": 0,                     # 总早安次数
+                    "morning_count": 1,                     # 总早安次数
                     "night_count": 1,                       # 总晚安次数
-                    "total_sleep": 0                        # 总睡眠时间
+                    "total_sleep": [0, 7, 8, 9]             # 总睡眠时间，列表形式
                 }
             }       
         }
     }
     ```
+
+    💥 `v0.3.x`更新了更多的早晚安数据！
 
 4. おはよう！🌈
 

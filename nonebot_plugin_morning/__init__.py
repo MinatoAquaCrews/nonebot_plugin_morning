@@ -315,30 +315,26 @@ async def _(matcher: Matcher):
     
     await night_setting.finish(msg)
         
-# 每日零点重置早晚安计数
-@scheduler.scheduled_job("cron", hour=0, minute=0, misfire_grace_time=60)
-async def daily_refresh():
-    morning_manager.daily_refresh()
-    logger.info("早晚安已刷新！")
+# 每日最早早安时间，重置昨日早安计数
+@driver.on_startup
+async def daily_morning_refresh():
+    morning_manager.daily_morning_scheduler()
+    logger.info("每日早安定时刷新任务已启动！")
+
+# 每日最早晚安时间，重置昨日晚安计数
+@driver.on_startup
+async def daily_night_refresh():
+    morning_manager.daily_night_scheduler()
+    logger.info("每日晚安定时刷新任务已启动！")
 
 # 每周一零点统计部分周数据
 @scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="1", misfire_grace_time=60)
 async def monday_refresh():
     morning_manager.weekly_night_refresh()
+    logger.info("每周晚安已刷新！")
 
-# 每周一最晚早安时间，统计每周睡眠数据
+# 每周一最晚早安时间，统计上周睡眠时间、早安并重置
 @driver.on_startup
-async def weekly_refresh_jobs():
-    # TODO check this on_startup sequence
-    threshold_hour: int = morning_manager.get_refresh_time()
-    if threshold_hour != -1:
-        scheduler.add_job(
-            morning_manager.weekly_scheduler_refresh,
-            "cron",
-            id="weekly_scheduler_refresh",
-            replace_existing=True,
-            hour=threshold_hour,
-            minute=0,
-            day_of_week="1",
-            misfire_grace_time=60
-        )
+async def weekly_refresh():
+    morning_manager.weekly_sleep_time_scheduler()
+    logger.info("每周睡眠时间定时刷新任务已启动！")
