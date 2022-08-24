@@ -25,9 +25,7 @@ def datetime2timedelta(_datetime: datetime) -> timedelta:
     return _datetime - datetime(_datetime.year, _datetime.month, _datetime.day, 0, 0, 0)
 
 def is_later_oclock(now_time: datetime, oclock: int) -> bool:
-    pass_time: timedelta = datetime2timedelta(now_time)
-    
-    return pass_time > timedelta(hours=oclock)
+    return datetime2timedelta(now_time) > timedelta(hours=oclock)
     
 def is_MorTimeinRange(early_time: int, late_time: int, now_time: datetime) -> bool:
     '''
@@ -35,9 +33,7 @@ def is_MorTimeinRange(early_time: int, late_time: int, now_time: datetime) -> bo
         - early_time: 较早的开始时间
         - late_time: 较晚的结束时间
     '''
-    pass_time: timedelta = datetime2timedelta(now_time)
-
-    return timedelta(hours=early_time) < pass_time < timedelta(hours=late_time)
+    return timedelta(hours=early_time) < datetime2timedelta(now_time) < timedelta(hours=late_time)
 
 def is_NigTimeinRange(early_time: int, late_time: int, now_time: datetime) -> bool:
     '''
@@ -45,9 +41,7 @@ def is_NigTimeinRange(early_time: int, late_time: int, now_time: datetime) -> bo
         - early_time: 较早的开始时间
         - late_time: 较晚的结束时间
     '''
-    pass_time: timedelta = datetime2timedelta(now_time)
-    
-    return pass_time > timedelta(hours=early_time) or pass_time < timedelta(hours=late_time)
+    return datetime2timedelta(now_time) > timedelta(hours=early_time) or datetime2timedelta(now_time) < timedelta(hours=late_time)
 
 def total_seconds2tuple_time(secs: int) -> Tuple[int, int, int, int]:
     days: int = secs // (3600 * 24)

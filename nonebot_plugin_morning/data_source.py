@@ -336,7 +336,7 @@ class MorningManager:
         else:
             in_sleep_tmp = f"{hours}时{minutes}分{seconds}秒"
             sleeptime_update(self._morning[gid][uid]["weekly"]["weekly_sleep"], [days, hours, minutes, seconds])
-            sleeptime_update(self._morning[gid][uid]["weekly"]["total_sleep"], [days, hours, minutes, seconds])
+            sleeptime_update(self._morning[gid][uid]["total"]["total_sleep"], [days, hours, minutes, seconds])
 
         # Daily morning time
         self._morning[gid][uid]["daily"]["morning_time"] = now_time
@@ -512,6 +512,7 @@ class MorningManager:
         if self._config["night"]["night_intime"]["enable"]:
             _early_time: int = self._config["night"]["night_intime"]["early_time"]
             _late_time: int = self._config["night"]["night_intime"]["late_time"]
+            
             if not is_NigTimeinRange(_early_time, _late_time, now_time):
                 msg = f'现在不能晚安哦，可以晚安的时间为{_early_time}时到第二天早上{_late_time}时~'
                 return MessageSegment.text(msg)
@@ -665,21 +666,16 @@ class MorningManager:
         '''
         self._load_config()
         
-        if _type == "morning" and key == "late_time":
-            return self._config[_type]["morning_intime"]["late_time"] if self._config[_type]["morning_intime"]["enable"] else -1
-        
-        if _type == "morning" and key == "early_time":
-            return self._config[_type]["morning_intime"]["early_time"] if self._config[_type]["morning_intime"]["enable"] else -1
+        if _type == "morning":
+            return self._config[_type]["morning_intime"][key] if self._config[_type]["morning_intime"]["enable"] else -1
 
-        if _type == "night" and key == "early_time":
-            return self._config[_type]["night_intime"]["early_time"] if self._config[_type]["night_intime"]["enable"] else -1
+        if _type == "night":
+            return self._config[_type]["night_intime"][key] if self._config[_type]["night_intime"]["enable"] else -1
     
     def daily_morning_scheduler(self, hours: Optional[int] = None) -> None:
         '''
             Run the scheduler for refreshing daily good-morning count. Replace the existing scheduler.
         '''
-        _hours: int = -1
-        
         if isinstance(hours, int):
             _hours = hours
         else:
@@ -700,8 +696,6 @@ class MorningManager:
         '''
             Run the scheduler for refreshing daily good-night count. Replace the existing scheduler.
         '''
-        _hours: int = -1
-        
         if isinstance(hours, int):
             _hours = hours
         else:
@@ -722,8 +716,6 @@ class MorningManager:
         '''
             Run the scheduler for refreshing the weekly sleeping time. Replace the existing scheduler.
         '''
-        _hours: int = -1
-        
         if isinstance(hours, int):
             _hours = hours
         else:

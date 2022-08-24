@@ -35,7 +35,7 @@ group_routine = on_command(cmd="群友作息", permission=GROUP, priority=12)
 configure = on_command(cmd="早安设置", aliases={"晚安设置", "早晚安设置"}, permission=GROUP, priority=11, block=True)
 morning_setting = on_regex(pattern=r"^早安(开启|关闭|设置)( (时限|多重起床|超级亢奋)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
 night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)( (时限|优质睡眠|深度睡眠)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
-    
+
 @morning.handle()
 async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     args = args.extract_plain_text()
