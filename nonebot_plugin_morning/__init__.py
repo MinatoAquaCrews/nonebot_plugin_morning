@@ -314,18 +314,12 @@ async def _(matcher: Matcher):
         msg = morning_manager.night_switch(_item, False)
     
     await night_setting.finish(msg)
-        
-# 每日最早早安时间，重置昨日早安计数
-@driver.on_startup
-async def daily_morning_refresh():
-    morning_manager.daily_morning_scheduler()
-    logger.info("每日早安定时刷新任务已启动！")
 
-# 每日最早晚安时间，重置昨日晚安计数
+# 每日最早晚安时间，重置昨日早晚安计数
 @driver.on_startup
-async def daily_night_refresh():
-    morning_manager.daily_night_scheduler()
-    logger.info("每日晚安定时刷新任务已启动！")
+async def daily_refresh():
+    morning_manager.daily_scheduler()
+    logger.info("每日早晚安定时刷新任务已启动！")
 
 # 每周一零点统计部分周数据
 @scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="1", misfire_grace_time=60)

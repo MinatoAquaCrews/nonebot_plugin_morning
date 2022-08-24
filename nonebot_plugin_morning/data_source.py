@@ -137,30 +137,19 @@ class MorningManager:
         self._save_config()
             
         return msg
-    
-    def daily_morning_refresh(self) -> None:
+        
+    def daily_refresh(self) -> None:
         '''
-            Reset good-morning count of groups of yesterday at the earliest time of daily good-morning.
+            Reset good-morning/night count of groups of yesterday at the earliest time of daily good-night.
         '''
         self._load_data()
         
         for gid in self._morning:
             self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
-        
-        self._save_data()
-        logger.info("每日早安已刷新！")
-        
-    def daily_night_refresh(self) -> None:
-        '''
-            Reset good-night count of groups of yesterday at the earliest time of daily good-night.
-        '''
-        self._load_data()
-        
-        for gid in self._morning:
             self._morning[gid]["group_count"]["daily"]["good_night"] = 0
         
         self._save_data()
-        logger.info("每日晚安已刷新！")
+        logger.info("每日早晚安已刷新！")
         
     def weekly_night_refresh(self) -> None:
         '''
@@ -176,7 +165,7 @@ class MorningManager:
                 
         self._save_data()
         
-    def weekly_scheduler_refresh(self) -> None:
+    def weekly_sleep_time_refresh(self) -> None:
         '''
             1. Refresh sleeping time & good-morning count of last week.
             2. Refresh the sleeping king UID of each groups.
@@ -220,8 +209,7 @@ class MorningManager:
                 msg = self._change_set_time("morning", _setting, early_time, late_time)
             
                 # Change the data of daily good-morning/night scheduler and weekly sleeping time scheduler
-                self.daily_morning_scheduler(early_time)
-                self.daily_night_scheduler(early_time)
+                self.daily_scheduler(early_time)
                 self.weekly_sleep_time_scheduler(late_time)
         else:
             interval: int = args[0]
@@ -240,12 +228,12 @@ class MorningManager:
         _setting: str = mor_switcher[_mor_setting]
         msg: str = self._change_enable("morning", _setting, new_state)
         
-        # Change the status of daily good-morning/night scheduler and weekly sleeping time scheduler
+        # Change the status of daily good-morning/night schedulers and weekly sleeping time scheduler
         if _setting == "morning_intime":
             # Remove the schedulers
             if not new_state:
                 try:
-                    scheduler.remove_job("weekly_scheduler_refresh")
+                    scheduler.remove_job("weekly_sleep_time_scheduler")
                     logger.info(f"每周睡眠时间定时刷新任务已关闭！")
                     
                 except JobLookupError as e:
@@ -253,34 +241,22 @@ class MorningManager:
                     msg += "\n每周睡眠时间定时刷新任务移除失败"
                 
                 try:
-                    scheduler.remove_job("daily_morning_refresh")
-                    logger.info(f"每日早安定时刷新任务已关闭！")
+                    scheduler.remove_job("daily_scheduler")
+                    logger.info(f"每日早晚安定时刷新任务已关闭！")
                     
                 except JobLookupError as e:
-                    logger.warning(f"每日早安定时刷新任务移除失败: {e}")
-                    msg += "\n每日早安定时刷新任务移除失败"
-                
-                try:
-                    scheduler.remove_job("daily_night_refresh")
-                    logger.info(f"每日晚安定时刷新任务已关闭！")
-                    
-                except JobLookupError as e:
-                    logger.warning(f"每日晚安定时刷新任务移除失败: {e}")
-                    msg += "\n每日晚安定时刷新任务移除失败"
+                    logger.warning(f"每日早晚安定时刷新任务移除失败: {e}")
+                    msg += "\n每日早晚安定时刷新任务移除失败"
             
             # Add the schedulers if they don't exist
             else:
-                if not scheduler.get_job("weekly_scheduler_refresh"):
+                if not scheduler.get_job("weekly_sleep_time_scheduler"):
                     self.weekly_sleep_time_scheduler()
                     logger.info("每周睡眠时间定时刷新任务已启动！")
                 
-                if not scheduler.get_job("daily_morning_refresh"):      
-                    self.daily_morning_scheduler()
-                    logger.info("每日早安定时刷新任务已启动！")
-                
-                if not scheduler.get_job("daily_night_refresh"):  
-                    self.daily_night_scheduler()
-                    logger.info("每日晚安定时刷新任务已启动！")
+                if not scheduler.get_job("daily_scheduler"):      
+                    self.daily_scheduler()
+                    logger.info("每日早晚安定时刷新任务已启动！")
         
         return MessageSegment.text(msg)
 
@@ -537,7 +513,7 @@ class MorningManager:
                     interval: int = self._config["night"]["deep_sleep"]["interval"]
                     morning_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
                     
-                    if morning_time - now_time < timedelta(hours=interval):
+                    if now_time - morning_time < timedelta(hours=interval):
                         msg = "睡这么久还不够？现在不能晚安哦~"
                         return MessageSegment.text(msg)
 
@@ -671,30 +647,10 @@ class MorningManager:
 
         if _type == "night":
             return self._config[_type]["night_intime"][key] if self._config[_type]["night_intime"]["enable"] else -1
-    
-    def daily_morning_scheduler(self, hours: Optional[int] = None) -> None:
-        '''
-            Run the scheduler for refreshing daily good-morning count. Replace the existing scheduler.
-        '''
-        if isinstance(hours, int):
-            _hours = hours
-        else:
-            _hours = self.get_refresh_time("morning", "early_time")
         
-        if _hours != -1:
-            scheduler.add_job(
-                self.daily_morning_refresh,
-                "cron",
-                id="daily_morning_refresh",
-                replace_existing=True,
-                hour=_hours,
-                minute=0,
-                misfire_grace_time=60
-            )
-        
-    def daily_night_scheduler(self, hours: Optional[int] = None) -> None:
+    def daily_scheduler(self, hours: Optional[int] = None) -> None:
         '''
-            Run the scheduler for refreshing daily good-night count. Replace the existing scheduler.
+            Run the scheduler for refreshing daily good-morning/night counts. Replace the existing scheduler.
         '''
         if isinstance(hours, int):
             _hours = hours
@@ -703,9 +659,9 @@ class MorningManager:
         
         if _hours != -1:
             scheduler.add_job(
-                self.daily_night_refresh,
+                self.daily_refresh,
                 "cron",
-                id="daily_night_refresh",
+                id="daily_scheduler",
                 replace_existing=True,
                 hour=_hours,
                 minute=0,
@@ -723,9 +679,9 @@ class MorningManager:
         
         if _hours != -1:
             scheduler.add_job(
-                self.weekly_scheduler_refresh,
+                self.weekly_sleep_time_refresh,
                 "cron",
-                id="weekly_scheduler_refresh",
+                id="weekly_sleep_time_scheduler",
                 replace_existing=True,
                 hour=_hours,
                 minute=0,

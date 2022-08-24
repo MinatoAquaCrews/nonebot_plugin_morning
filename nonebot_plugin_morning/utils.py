@@ -56,3 +56,5 @@ def sleeptime_update(_l: List[int], _lnew: List[int]) -> None:
         _l[i] += _lnew[i]
 
 #TODO: A compatible transfer from old morning data to new version's
+def json_files_update(_ofile, _nfile):
+    pass
