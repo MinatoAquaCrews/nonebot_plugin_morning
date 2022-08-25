@@ -311,8 +311,8 @@ class MorningManager:
             in_sleep_tmp = ""
         else:
             in_sleep_tmp = f"{hours}时{minutes}分{seconds}秒"
-            sleeptime_update(self._morning[gid][uid]["weekly"]["weekly_sleep"], [days, hours, minutes, seconds])
-            sleeptime_update(self._morning[gid][uid]["total"]["total_sleep"], [days, hours, minutes, seconds])
+            self._morning[gid][uid]["weekly"]["weekly_sleep"] = sleeptime_update(self._morning[gid][uid]["weekly"]["weekly_sleep"], in_sleep)
+            self._morning[gid][uid]["total"]["total_sleep"] = sleeptime_update(self._morning[gid][uid]["total"]["total_sleep"], in_sleep)
 
         # Daily morning time
         self._morning[gid][uid]["daily"]["morning_time"] = now_time
