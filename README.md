@@ -18,7 +18,7 @@ _🌈 おはよう！ 🌈_
     <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a5">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a6">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
@@ -30,11 +30,11 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.3.0a5
+v0.3.0a6
 
 ⚠ 适配nonebot2-2.0.0beta.3+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a5)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0a6)
 
 ## 安装
 
@@ -44,6 +44,7 @@ v0.3.0a5
 
     ``` python
     MORNING_PATH="path-to-your-resource"    # For example: ./my_data/morning_resource/
+    OLD_MORNING_COMPATIBLE=false            # 是否开启旧版数据文件自动更新，默认开启
     ```
 
 ## 功能
@@ -78,31 +79,37 @@ v0.3.0a5
                     "weekly_sleep": [0, 7, 8, 9],           # 周睡眠时长，列表形式：天/时/分/秒
                     "lastweek_morning_count": 1,            # 上周早安天数（暂存）
                     "lastweek_night_count": 1,              # 上周晚安天数（暂存）
-                    "lastweek_sleep": [0, 7, 8, 9],         # 上周睡眠时长，列表形式（暂存）
+                    "lastweek_sleep": [0, 7, 8, 9],         # 上周睡眠时长（暂存）
                     "lastweek_earliest_morning_time": 0,    # 上周早安最早的时间（暂存）
                     "lastweek_latest_night_time": 0         # 上周晚安最晚的时间（暂存）
                 },
                 "total": {
                     "morning_count": 1,                     # 总早安次数
                     "night_count": 1,                       # 总晚安次数
-                    "total_sleep": [0, 7, 8, 9]             # 总睡眠时间，列表形式
+                    "total_sleep": [0, 7, 8, 9]             # 总睡眠时间
                 }
             }       
         }
     }
     ```
 
-    💥 `v0.3.x`更新了更多的早晚安数据！
+    💥 `v0.3.0`新增更多的群组及个人早晚安信息！
 
-4. おはよう！🌈
+4. **新增** 将自动更新`v0.2.x`的数据文件`data.json`为新版`morning.json`；将自动更新`v0.2.x`的配置文件`config.json`部分键值。启用配置`OLD_MORNING_COMPATIBLE`，在插件初始化时，若不存在新版数据文件且存在旧版数据文件`data.json`，则更新数据字段、保留原始数据，否则创建空的新版数据文件。
+   
+   ⚠ 若存在新版数据文件`morning.json`，则忽略配置选项`OLD_MORNING_COMPATIBLE`
+
+   ⚠ 自动检测配置文件`config.json`的部分键值是否为旧版并自动更新，后续版本将弃用该部分兼容
+
+5. おはよう！🌈
 
 ## 命令
 
 1. 早晚安：[早安/晚安]，记录睡眠时间；
 
-2. 查看我的作息：[我的作息]；
+2. **新增** 查看我的作息：[我的作息]：每周一新增显示上周睡眠信息统计，其他时间显示本周信息；
 
-3. 查看群友作息：[群友作息]，看看今天几个人睡觉或起床了；
+3. **新增** 查看群友作息：[群友作息]，看看今天几个群友睡觉或起床了，每周一新增显示上周睡觉王；
 
 4. 查看当前安早晚安配置（规则）：[早晚安设置]；
 
@@ -116,9 +123,7 @@ v0.3.0a5
 
 ## 规则配置
 
-`confg.json`文件已默认写入下述配置，当其不存在时则尝试从仓库中下载预置的配置文件：
-
-⚠ 不确保下载成功
+`confg.json`文件已默认写入下述配置，会自动检测旧版配置文件并自动更新，当其不存在时则创建并写入下述**初始值**：
 
 ``` python
 {

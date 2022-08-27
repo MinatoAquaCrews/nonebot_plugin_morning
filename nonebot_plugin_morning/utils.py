@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, date
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Dict
 import json
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -61,3 +61,53 @@ def sleeptime_update(_lold: List[int], _sleep: timedelta) -> List[int]:
     days, hours, minutes, seconds = total_seconds2tuple_time(int(t_new.total_seconds()))
     
     return [days, hours, minutes, seconds]
+
+# A compatible transfer from old version format of data.json into new version's(morning.json)
+def morning_json_update(_ofile: Dict[str, Dict[str, Dict[str, int]]]) -> Dict[str, Dict[str, Dict[str, Dict[str, Union[str, int, List[int]]]]]]:
+    _nfile: Dict[str, Dict[str, Dict[str, Dict[str, Union[str, int, List[int]]]]]] = dict()
+    
+    for gid in _ofile:
+        # Create groups' info
+        _nfile.update({
+            gid: {
+                "group_count": {
+                    "daily": {
+                        "good_morning": _ofile[gid]["today_count"]["morning"],
+                        "good_night": _ofile[gid]["today_count"]["night"]
+                    },
+                    "weekly": {
+                        "sleeping_king": ""
+                    }
+                }
+            }
+        })
+        for uid in _ofile[gid]:
+            if uid == "today_count":
+                continue
+            else:
+                # Create users' info
+                _nfile[gid].update({
+                    uid: {
+                            "daily": {
+                            "morning_time": _ofile[gid][uid]["get_up_time"],
+                            "night_time": _ofile[gid][uid]["sleep_time"]
+                        },
+                        "weekly": {
+                            "weekly_morning_count": 0,
+                            "weekly_night_count": 0,
+                            "weekly_sleep": [0, 0, 0, 0],
+                            "lastweek_morning_count": 0,
+                            "lastweek_night_count": 0,
+                            "lastweek_sleep": [0, 0, 0, 0],
+                            "lastweek_earliest_morning_time": _ofile[gid][uid]["get_up_time"],
+                            "lastweek_latest_night_time": _ofile[gid][uid]["sleep_time"]
+                        },
+                        "total": {
+                            "morning_count": _ofile[gid][uid]["morning_count"],
+                            "night_count": _ofile[gid][uid]["night_count"],
+                            "total_sleep": [0, 0, 0, 0]
+                        }
+                    }
+                })
+    
+    return _nfile
