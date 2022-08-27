@@ -61,7 +61,3 @@ def sleeptime_update(_lold: List[int], _sleep: timedelta) -> List[int]:
     days, hours, minutes, seconds = total_seconds2tuple_time(int(t_new.total_seconds()))
     
     return [days, hours, minutes, seconds]
-
-#TODO: A compatible transfer from old morning data to new version's
-def json_files_update(_ofile, _nfile):
-    pass

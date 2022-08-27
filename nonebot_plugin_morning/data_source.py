@@ -379,15 +379,14 @@ class MorningManager:
                     if now_time - night_time < timedelta(hours=interval):
                         msg = "你可猝死算了吧？现在不能早安哦~"
                         return MessageSegment.text(msg)
+            # 有信息但是隔日
+            else:
+                msg = random.choice(morning_prompt)
+                return MessageSegment.text(msg)
                   
-        # 否则说明：他还没睡过觉、或为隔日早安；即便如此，还是回复早安！
+        # 否则说明：他还没睡过觉；即便如此，还是回复早安！
         else:
-            msg = random.choice([
-                "早安！",
-                "おはよう！",
-                "早安～",
-                "哦哈哟！"
-            ])
+            msg = random.choice(morning_prompt)
             return MessageSegment.text(msg)
             
         # 当前面条件均符合的时候，允许早安
@@ -395,12 +394,7 @@ class MorningManager:
         if isinstance(in_sleep, str):
             msg = f"早安成功！你的睡眠时长为{in_sleep}，\n你是今早第{num}个起床的{sex_str}！"
         else:
-            msg = random.choice([
-                "早安！",
-                "おはよう！",
-                "早安～",
-                "哦哈哟！"
-            ])
+            msg = random.choice(morning_prompt)
  
         return MessageSegment.text(msg)
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 from pydantic import BaseModel, Extra
-from typing import Optional
+from typing import Optional, Dict, List
 from nonebot import get_driver, logger
 import httpx
 import json
@@ -8,18 +8,25 @@ import json
 class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"
     
-mor_switcher = {
+mor_switcher: Dict[str, str] = {
     "时限": "morning_intime",
     "多重起床": "multi_get_up",
     "超级亢奋": "super_get_up"
 }
 
-nig_switcher = {
+nig_switcher: Dict[str, str] = {
     "时限": "night_intime",
     "优质睡眠": "good_sleep",
     "深度睡眠": "deep_sleep"
 }
-    
+
+morning_prompt: List[str] = [
+    "早安！",
+    "おはよう！",
+    "早安～",
+    "哦哈哟！"
+]
+
 driver = get_driver()
 morning_config: PluginConfig = PluginConfig.parse_obj(driver.config.dict())
 
