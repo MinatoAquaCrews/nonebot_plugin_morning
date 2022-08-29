@@ -160,6 +160,10 @@ class MorningManager:
         
         for gid in self._morning:
             for uid, user_items in self._morning[gid].items():
+                # Remember to jump over the key "group_count"
+                if uid == "group_count":
+                    continue
+                
                 user_items["weekly"]["lastweek_night_count"] = user_items["weekly"]["weekly_night_count"]
                 user_items["weekly"]["weekly_night_count"] = 0
                 
@@ -178,6 +182,10 @@ class MorningManager:
             _sleeping_king_uid: str = ""
             
             for uid, user_items in self._morning[gid].items():
+                # Remember to jump over the key "group_count"
+                if uid == "group_count": 
+                    continue
+                
                 user_items["weekly"]["lastweek_morning_count"] = user_items["weekly"]["weekly_morning_count"]
                 user_items["weekly"]["lastweek_sleep"] = user_items["weekly"]["weekly_sleep"]
                 
@@ -557,16 +565,15 @@ class MorningManager:
                 if threshold_hour != -1 and is_later_oclock(now_time, threshold_hour):
                     lastweek_morning_count: int = self._morning[gid][uid]["weekly"]["lastweek_morning_count"]
                     lastweek_night_count: int = self._morning[gid][uid]["weekly"]["lastweek_night_count"]
-                    
                     lastweek_sleep: List[int] = self._morning[gid][uid]["weekly"]["lastweek_sleep"]
                     
                     lastweek_lnt_date: datetime = datetime.strptime(self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"], "%Y-%m-%d %H:%M:%S")
-                    lastweek_lnt: time = datetime.strptime(lastweek_lnt_date, "%Y-%m-%d %H:%M:%S").time()
-                    latest_day: int = datetime.strptime(lastweek_lnt_date, "%Y-%m-%d %H:%M:%S").weekday()
+                    lastweek_lnt: time = lastweek_lnt_date.time()
+                    latest_day: int = lastweek_lnt_date.weekday()
                     
                     lastweek_emt_date: datetime = datetime.strptime(self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"], "%Y-%m-%d %H:%M:%S")
-                    lastweek_emt: time = datetime.strptime(lastweek_emt_date, "%Y-%m-%d %H:%M:%S").time()
-                    earliest_day: int = datetime.strptime(lastweek_emt_date, "%Y-%m-%d %H:%M:%S").weekday()
+                    lastweek_emt: time = lastweek_emt_date.time()
+                    earliest_day: int = lastweek_emt_date.weekday()
                     
                     msg += f"\n上周早安了{lastweek_morning_count}次"
                     msg += f"\n上周晚安了{lastweek_night_count}次"
@@ -604,10 +611,11 @@ class MorningManager:
         night_count: int = self._morning[gid]["group_count"]["daily"]["good_night"]        
         
         if today == MONDAY:
+            uid: str = ""
             threshold_hour: int = self.get_refresh_time("morning", "late_time")
             
             if threshold_hour != -1 and is_later_oclock(now_time, threshold_hour):
-                uid: str = self._morning[gid]["group_count"]["weekly"]["sleeping_king"]
+                uid = self._morning[gid]["group_count"]["weekly"]["sleeping_king"]
             
             return morning_count, night_count, uid if uid != "" else None
         
