@@ -192,7 +192,7 @@ class MorningManager:
                 user_items["weekly"]["weekly_morning_count"] = 0
                 user_items["weekly"]["weekly_sleep"] = [0, 0, 0, 0]
                 
-                # Compare two lists, day > hrs > mins / secs
+                # Compare sleeping times, day > hrs > mins > secs
                 if user_items["weekly"]["lastweek_sleep"] > _max_sleep_time:
                     _max_sleep_time = user_items["weekly"]["lastweek_sleep"]
                     _sleeping_king_uid = uid

@@ -18,7 +18,7 @@ _🌈 おはよう！ 🌈_
     <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0rc1">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
@@ -30,11 +30,11 @@ _🌈 おはよう！ 🌈_
 
 ## 版本
 
-v0.3.0rc1
+v0.3.0
 
 ⚠ 适配nonebot2-2.0.0beta.3+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0rc1)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0)
 
 ## 安装
 
@@ -75,7 +75,7 @@ v0.3.0rc1
                 "weekly": {
                     "weekly_morning_count": 1,              # 周早安天数
                     "weekly_night_count": 1,                # 周晚安天数
-                    "weekly_sleep": [0, 7, 8, 9],           # 周睡眠时长，列表形式：天/时/分/秒
+                    "weekly_sleep": [0, 7, 8, 9],           # 周睡眠时长，列表形式：天/时/分/秒，例如0天7时8分9秒
                     "lastweek_morning_count": 1,            # 上周早安天数（暂存）
                     "lastweek_night_count": 1,              # 上周晚安天数（暂存）
                     "lastweek_sleep": [0, 7, 8, 9],         # 上周睡眠时长（暂存）
@@ -92,7 +92,11 @@ v0.3.0rc1
     }
     ```
 
-    💥 `v0.3.0`新增更多的群组及个人早晚安信息！
+    👉 说明：
+    
+    1. 个人信息字段的`daily`储存每日作息数据；`weekly`储存每周作息数据，`lastweek_`前缀的数据为上周的“每周作息数据”，即暂存上周作息数据；`total`为总作息数据；
+
+    2. 在**每周一的最晚早安时间**定时更新，在周一且当天**最晚早安时间**后，`群友作息`与`我的作息`将增加有关上周作息数据的信息（包括`lastweek_`前缀的数据与群信息字段中的`weekly`数据，目前仅有上周睡觉大王）；
 
 4. **新增** 将自动更新`v0.2.x`的数据文件`data.json`为新版`morning.json`；将自动更新`v0.2.x`的配置文件`config.json`部分键值。在插件初始化时，若不存在新版数据文件且存在旧版数据文件`data.json`，则更新数据字段、保留原始数据，否则创建空的新版数据文件。
    
