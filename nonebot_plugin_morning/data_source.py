@@ -1,500 +1,698 @@
-import nonebot
-from nonebot import logger
-from nonebot.adapters.onebot.v11 import GroupMessageEvent
-from typing import Optional, Union, List, Tuple
+from calendar import MONDAY
+from nonebot import require
+from nonebot.adapters.onebot.v11 import MessageSegment
+from typing import Union, List, Dict, Optional, Tuple
 from pathlib import Path
-import datetime
-import os
-from .download import get_preset_config
-try:
-    import ujson as json
-except ModuleNotFoundError:
-    import json
-
-global_config = nonebot.get_driver().config
-if not hasattr(global_config, "morning_path"):
-    MORNING_PATH = os.path.join(os.path.dirname(__file__), "resource")
-else:
-    MORNING_PATH = global_config.morning_path
-
-mor_switcher = {
-    '时限': 'get_up_intime',
-    '多重起床': 'multi_get_up',
-    '超级亢奋': 'super_get_up'
-}
-
-nig_switcher = {
-    '时限': 'sleep_intime',
-    '优质睡眠': 'good_sleep',
-    '深度睡眠': 'deep_sleep'
-}
+from datetime import datetime, time
+import random
+from .config import *
+from .utils import *
+    
+require("nonebot_plugin_apscheduler")
+from nonebot_plugin_apscheduler import scheduler
+from apscheduler.jobstores.base import JobLookupError
 
 class MorningManager:
-    def __init__(self, path: Optional[Path]):
-        self.user_data = {}
-        self.config = {}
-
-        if not path:
-            data_file = Path(MORNING_PATH) / "data.json"
-            config_file = Path(MORNING_PATH) / "config.json"
-        else:
-            if not path.exists():
-                path.mkdir(parents=True, exist_ok=True)
-            data_file = path / "data.json"
-            config_file = path / "config.json"
-
-        self.data_file = data_file
-        self.config_file = config_file
-
-        if not data_file.exists():
-            with open(data_file, "w", encoding="utf-8") as f:
-                f.write(json.dumps(dict()))
-                f.close()
-
-        if data_file.exists():
-            with open(data_file, "r", encoding="utf-8") as f:
-                self.user_data = json.load(f)
-
-        if not config_file.exists():
-            logger.info("Downloading preset morning config resource...")
-            with open(config_file, "w", encoding="utf-8") as f:
-                f.write(json.dumps(dict()))
-                f.close()
-            
-            get_preset_config(config_file)
+    def __init__(self):
+        self._morning: Dict[str, Dict[str, Dict[str, Dict[str, Union[str, int, datetime, List[int]]]]]] = dict()
+        self._morning_path: Path = morning_config.morning_path / "morning.json"
         
-        if config_file.exists():
-            with open(config_file, "r", encoding="utf-8") as f:
-                self.config = json.load(f)
+        self._config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = dict()
+        self._config_path: Path = morning_config.morning_path / "config.json"
 
-    '''
-        初始化用户数据
-    '''
-    def _init_data(self, group_id: str) -> None:
-        if group_id not in self.user_data.keys():
-            self.user_data[group_id] = {
-                "today_count": {
-                    "morning": 0,
-                    "night": 0
+    def _init_group_data(self, gid: str) -> None:
+        '''
+            Initialize group data.
+        '''
+        self._load_data()
+        if gid not in self._morning:
+            self._morning.update({
+                gid: {
+                    "group_count": {
+                        "daily": {
+                            "good_morning": 0,  # Daily good-morning count of groups, REFRESH at the late time of good-morning everyday
+                            "good_night": 0     # Daily good-night count of groups, REFRESH at the late time of good-night everyday
+                        },
+                        "weekly": {
+                            "sleeping_king": "" # Sleeping king of group of last week, REFRESH at the late time of good-morning every Monday
+                        }
+                    }
                 }
-            }
+            })
+            
+            self._save_data()
 
-            self.save_data()
-
-    '''
-        查看当前设置
-    '''
-    def get_current_config(self) -> str:
-        msg = '早安晚安设置如下：'
-        # morning_config
-        get_up_intime = self.config['morning']['get_up_intime']['enable']
-        if get_up_intime:
-            msg = msg + '\n是否要求规定时间内起床：是\n - 最早允许起床时间：' + str(self.config['morning']['get_up_intime']['early_time']) + '点\n - 最晚允许起床时间：' + str(self.config['morning']['get_up_intime']['late_time']) + '点'
+    def get_current_config(self) -> MessageSegment:
+        '''
+            Return the current configurations.
+        '''
+        msg: str = "早安晚安设置如下："
+        self._load_config()
+        
+        # Morning config
+        morning_intime: bool = self._config["morning"]["morning_intime"]["enable"]
+        if morning_intime:
+            msg += "\n是否要求规定时间内起床：是\n - 最早允许起床时间：" + str(self._config["morning"]['morning_intime']["early_time"]) + "点\n - 最晚允许起床时间：" + str(self._config["morning"]["morning_intime"]["late_time"]) + "点"
         else:
-            msg = msg + '\n是否要求规定时间内起床：否'
-        multi_get_up = self.config['morning']['multi_get_up']['enable']
+            msg += "\n是否要求规定时间内起床：否"
+            
+        multi_get_up: bool = self._config["morning"]["multi_get_up"]["enable"]
         if multi_get_up:
-            msg = msg + '\n是否允许连续多次起床：是'
+            msg += "\n是否允许连续多次起床：是"
         else:
-            msg = msg + '\n是否允许连续多次起床：否\n - 允许的最短起床间隔：' + str(self.config['morning']['multi_get_up']['interval']) + '小时'
-        super_get_up = self.config['morning']['super_get_up']['enable']
+            msg += "\n是否允许连续多次起床：否\n - 允许的最短起床间隔：" + str(self._config["morning"]["multi_get_up"]["interval"]) + "小时"
+        
+        super_get_up: bool = self._config["morning"]["super_get_up"]["enable"]
         if super_get_up:
-            msg = msg + '\n是否允许超级亢奋(即睡眠时长很短)：是'
+            msg += "\n是否允许超级亢奋(即睡眠时长很短)：是"
         else:
-            msg = msg + '\n是否允许超级亢奋(即睡眠时长很短)：否\n - 允许的最短睡觉时长：' + str(self.config['morning']['super_get_up']['interval']) + '小时'
-        # night_config
-        sleep_intime = self.config['night']['sleep_intime']['enable']
-        if sleep_intime:
-            msg = msg + '\n是否要求规定时间内睡觉：是\n - 最早允许睡觉时间：' + str(self.config['night']['sleep_intime']['early_time']) + '点\n - 最晚允许睡觉时间：第二天早上' + str(self.config['night']['sleep_intime']['late_time']) + '点'
+            msg += "\n是否允许超级亢奋(即睡眠时长很短)：否\n - 允许的最短睡觉时长：" + str(self._config["morning"]["super_get_up"]["interval"]) + "小时"
+        
+        # Night config
+        night_intime: bool = self._config["night"]["night_intime"]["enable"]
+        if night_intime:
+            msg += "\n是否要求规定时间内睡觉：是\n - 最早允许睡觉时间：" + str(self._config["night"]["night_intime"]["early_time"]) + \
+                "点\n - 最晚允许睡觉时间：第二天早上" + str(self._config["night"]["night_intime"]["late_time"]) + "点"
         else:
-            msg = msg + '\n是否要求规定时间内睡觉：否'
-        good_sleep = self.config['night']['good_sleep']['enable']
+            msg += "\n是否要求规定时间内睡觉：否"
+        
+        good_sleep: bool = self._config["night"]["good_sleep"]["enable"]
         if good_sleep:
-            msg = msg + '\n是否开启优质睡眠：是'
+            msg += "\n是否开启优质睡眠：是"
         else:
-            msg = msg + '\n是否开启优质睡眠：否\n - 允许的最短优质睡眠：' + str(self.config['night']['good_sleep']['interval']) + '小时'
-        deep_sleep = self.config['night']['deep_sleep']['enable']
+            msg += "\n是否开启优质睡眠：否\n - 允许的最短优质睡眠：" + str(self._config["night"]["good_sleep"]["interval"]) + "小时"
+        
+        deep_sleep: bool = self._config["night"]["deep_sleep"]["enable"]
         if deep_sleep:
-            msg = msg + '\n是否允许深度睡眠(即清醒时长很短)：是 '
+            msg += "\n是否允许深度睡眠(即清醒时长很短)：是"
         else:
-            msg = msg + '\n是否允许深度睡眠(即清醒时长很短)：否\n - 允许的最短清醒时长：' + str(self.config['night']['deep_sleep']['interval']) + '小时'
-        return msg
+            msg += "\n是否允许深度睡眠(即清醒时长很短)：否\n - 允许的最短清醒时长：" + str(self._config["night"]["deep_sleep"]["interval"]) + "小时"
+        
+        return MessageSegment.text(msg)
 
-# ------------------------------ config ------------------------------ #
+    # ------------------------------ Config ------------------------------ #
+    def _change_enable(self, day_or_night: str, _setting: str, new_state: bool) -> str:
+        '''
+            Change and save the new state of a setting.
+        '''
+        self._load_config()
+        self._config[day_or_night][_setting]["enable"] = new_state
+        self._save_config()
 
-    # 开启或关闭
-    def change_config(self, day_or_night: str, server: str, enable: bool) -> str:
-        try:
-            self.config[day_or_night][server]["enable"] = enable
-            self.save_config()
-            msg = "配置更新成功！"
-        except Exception as e:
-            msg = f"配置更新失败！错误原因{e}"
+        return "配置更新成功！"
 
-        return msg
-
-    # 更改时间或间隔
-    def change_set_time(self, *args) -> str:
-        try:
-            day_or_night = args[0]
-            server = args[1]
-            if server == "get_up_intime" or server == "sleep_intime":
-                early_time = args[2]
-                late_time = args[3]
-                self.config[day_or_night][server]["early_time"] = early_time
-                self.config[day_or_night][server]["late_time"] = late_time
+    def _change_set_time(self, _day_or_night: str, _setting: str, _interval_or_early_time: int, _late_time: Optional[int] = None) -> str:
+        '''
+            Change the interval of a setting.
+        '''
+        self._load_config()
+        
+        if _setting == "morning_intime" or _setting == "night_intime":
+            early_time: int = _interval_or_early_time
+            if isinstance(_late_time, int):
+                late_time: int = _late_time
             else:
-                interval = args[2]
-                self.config[day_or_night][server]["interval"] = interval
+                return "配置更新失败：缺少参数！"
             
-            self.save_config()
-            msg = "配置更新成功！"
-
-        except Exception as e:
-            msg = f"配置更新失败！错误原因{e}"
+            self._config[_day_or_night][_setting]["early_time"] = early_time
+            self._config[_day_or_night][_setting]["late_time"] = late_time
+        else:
+            interval: int = _interval_or_early_time
+            self._config[_day_or_night][_setting]["interval"] = interval
         
+        msg: str = "配置更新成功！"
+        
+        # Some settings are True in default
+        if _setting == "morning_intime" or _setting == "night_intime" or _setting == "good_sleep" \
+            and self._config[_day_or_night][_setting]["enable"] == False:
+            self._config[_day_or_night][_setting]["enable"] = True
+            msg += "且此项设置已启用！"
+        
+        # Some settings are False in default
+        if _setting == "multi_get_up" or _setting == "super_get_up" or _setting == "deep_sleep" \
+            and self._config[_day_or_night][_setting]["enable"] == True:
+            self._config[_day_or_night][_setting]["enable"] = False
+            msg += "且此项设置已禁用！"
+        
+        self._save_config()
+            
         return msg
-
-    def save_config(self) -> None:
-        '''
-            保存配置数据
-        '''
-        with open(self.config_file, 'w', encoding='utf-8') as f:
-            json.dump(self.config, f, ensure_ascii=False, indent=4)
-    
-    def save_data(self) -> None:
-        '''
-            保存用户数据
-        '''
-        with open(self.data_file, 'w', encoding='utf-8') as f:
-            json.dump(self.user_data, f, ensure_ascii=False, indent=4)
-    
-    def reset_data(self) -> None:
-        '''
-            刷新群一天早晚安数据
-        '''
-        for group_id in self.user_data.keys():
-            self.user_data[group_id]['today_count']['morning'] = 0
-            self.user_data[group_id]['today_count']['night'] = 0
         
-        self.save_data()
-
-    def morning_config(self, args: List) -> str:
-        if args[0] not in mor_switcher.keys():
-            msg = f'在早安设置中未找到"{args[0]}"，请确保输入正确，目前可选值有:'
-            for key in mor_switcher.keys():
-                msg += " " + key
-            return msg
+    def daily_refresh(self) -> None:
+        '''
+            Reset good-morning/night count of groups of yesterday at the earliest time of daily good-night.
+        '''
+        self._load_data()
         
-        server = mor_switcher[args[0]]
-        if server == "get_up_intime":
-            try:
-                early_time = int(args[1])
-                late_time = int(args[2])
-            except:
-                msg = "获取参数错误，请确保你输入了正确的命令，样例参考：\n[早安设置 时限 1 18] 即1点到18点期间可以起床，数字会自动强制取整"
-                return msg
+        for gid in self._morning:
+            self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
+            self._morning[gid]["group_count"]["daily"]["good_night"] = 0
+        
+        self._save_data()
+        logger.info("每日早晚安已刷新！")
+        
+    def weekly_night_refresh(self) -> None:
+        '''
+            1. Refresh good-night count of last week at 0 A.M. every Monday.
+            2. Reset weekly good-night count at 0 A.M. every Monday.
+        '''
+        self._load_data()
+        
+        for gid in self._morning:
+            for uid, user_items in self._morning[gid].items():
+                # Remember to jump over the key "group_count"
+                if uid == "group_count":
+                    continue
+                
+                user_items["weekly"]["lastweek_night_count"] = user_items["weekly"]["weekly_night_count"]
+                user_items["weekly"]["weekly_night_count"] = 0
+                
+        self._save_data()
+        
+    def weekly_sleep_time_refresh(self) -> None:
+        '''
+            1. Refresh sleeping time & good-morning count of last week.
+            2. Refresh the sleeping king UID of each groups.
+            3. Reset weekly sleeping time & good-morning count.
+        '''
+        self._load_data()
+        
+        for gid in self._morning:
+            _max_sleep_time: List[int] = [0, 0, 0, 0]
+            _sleeping_king_uid: str = ""
+            
+            for uid, user_items in self._morning[gid].items():
+                # Remember to jump over the key "group_count"
+                if uid == "group_count": 
+                    continue
+                
+                user_items["weekly"]["lastweek_morning_count"] = user_items["weekly"]["weekly_morning_count"]
+                user_items["weekly"]["lastweek_sleep"] = user_items["weekly"]["weekly_sleep"]
+                
+                user_items["weekly"]["weekly_morning_count"] = 0
+                user_items["weekly"]["weekly_sleep"] = [0, 0, 0, 0]
+                
+                # Compare sleeping times, day > hrs > mins > secs
+                if user_items["weekly"]["lastweek_sleep"] > _max_sleep_time:
+                    _max_sleep_time = user_items["weekly"]["lastweek_sleep"]
+                    _sleeping_king_uid = uid
+                    
+            self._morning[gid]["group_count"]["weekly"]["sleeping_king"] = _sleeping_king_uid
+                
+        self._save_data()
+        logger.info("每周睡眠时间、每周早安已刷新！")
+
+    def morning_config(self, _mor_setting: str, *args: List[int]) -> MessageSegment:
+        '''
+            Configurations about morning.
+        '''
+        _setting: str = mor_switcher[_mor_setting]
+        if _setting == "morning_intime":
+            early_time: int = args[0]
+            late_time: int = args[1]
             
             if early_time < 0 or early_time > 24 or late_time < 0 or late_time > 24:
                 msg = "错误！您设置的时间未在0-24之间，要求：0 <= 时间 <= 24"
-                return msg
-
-            msg = self.change_set_time("morning", server, early_time, late_time)
+            else:
+                msg = self._change_set_time("morning", _setting, early_time, late_time)
+            
+                # Change the data of daily good-morning/night scheduler and weekly sleeping time scheduler
+                self.daily_scheduler(early_time)
+                self.weekly_sleep_time_scheduler(late_time)
         else:
-            try:
-                interval = int(args[1])
-            except:
-                msg = "获取参数错误，请确保你输入了正确的命令，样例参考：\n[早安设置 多重起床 6] 即最小间隔6小时，数字会自动强制取整"
-                return msg
+            interval: int = args[0]
+            
             if interval < 0 or interval > 24:
                 msg = "错误！您设置的时间间隔未在0-24之间，要求：0 <= 时间 <= 24"
-                return msg
-
-            msg = self.change_set_time("morning", server, interval)
+            else:
+                msg = self._change_set_time("morning", _setting, interval)
         
-        return msg
+        return MessageSegment.text(msg)
 
-    def morning_switch(self, mor_server: str, enable: bool) -> str:
-        if mor_server not in mor_switcher.keys():
-            msg = f'在早安设置中未找到"{mor_server}"，请确保输入正确，目前可选值有:'
-            for key in mor_switcher.keys():
-                msg += " " + key
-        else:   
-            server = mor_switcher[mor_server]
-            msg = self.change_config("morning", server, enable)
+    def morning_switch(self, _mor_setting: str, new_state: bool) -> MessageSegment:
+        '''
+            Enable/Disable of morning settings.
+        '''
+        _setting: str = mor_switcher[_mor_setting]
+        msg: str = self._change_enable("morning", _setting, new_state)
         
-        return msg
+        # Change the status of daily good-morning/night schedulers and weekly sleeping time scheduler
+        if _setting == "morning_intime":
+            # Remove the schedulers
+            if not new_state:
+                try:
+                    scheduler.remove_job("weekly_sleep_time_scheduler")
+                    logger.info(f"每周睡眠时间定时刷新任务已关闭！")
+                    
+                except JobLookupError as e:
+                    logger.warning(f"每周睡眠时间定时刷新任务移除失败: {e}")
+                    msg += "\n每周睡眠时间定时刷新任务移除失败"
+                
+                try:
+                    scheduler.remove_job("daily_scheduler")
+                    logger.info(f"每日早晚安定时刷新任务已关闭！")
+                    
+                except JobLookupError as e:
+                    logger.warning(f"每日早晚安定时刷新任务移除失败: {e}")
+                    msg += "\n每日早晚安定时刷新任务移除失败"
+            
+            # Add the schedulers if they don't exist
+            else:
+                if not scheduler.get_job("weekly_sleep_time_scheduler"):
+                    self.weekly_sleep_time_scheduler()
+                    logger.info("每周睡眠时间定时刷新任务已启动！")
+                
+                if not scheduler.get_job("daily_scheduler"):      
+                    self.daily_scheduler()
+                    logger.info("每日早晚安定时刷新任务已启动！")
+        
+        return MessageSegment.text(msg)
 
-    def night_config(self, args: List) -> str:
-        if args[0] not in nig_switcher.keys():
-            msg = f'在晚安设置中未找到"{args[0]}"，请确保输入正确，目前可选值有:'
-            for key in nig_switcher.keys():
-                msg += " " + key
-            return msg
-        
-        server = nig_switcher[args[0]]
-        if server == "sleep_intime":
-            try:
-                early_time = int(args[1])
-                late_time = int(args[2])
-            except:
-                msg = "获取参数错误，请确保你输入了正确的命令，样例参考：\n[晚安设置 时限 18 6] 即18点到第二天6点期间可以晚安，数字会自动强制取整，注意第二个数字一定是第二天的时间"
-                return msg
+    def night_config(self, _nig_setting: str, *args: List[int]) -> MessageSegment:
+        '''
+            Configurations about night.
+        '''
+        _setting: str = nig_switcher[_nig_setting]
+        if _setting == "night_intime":
+            early_time: int = args[0]
+            late_time: int = args[1]
             
             if early_time < 0 or early_time > 24 or late_time < 0 or late_time > 24:
                 msg = "错误！您设置的时间未在0-24之间，要求：0 <= 时间 <= 24"
-                return msg
-
-            msg = self.change_set_time("night", server, early_time, late_time)
+            else:
+                msg = self._change_set_time("night", _setting, early_time, late_time)
         else:
-            try:
-                interval = int(args[1])
-            except:
-                msg = "获取参数错误，请确保你输入了正确的命令，样例参考：\n[晚安设置 深度睡眠 6] 即最小间隔6小时，数字会自动强制取整"
-                return msg
+            interval: int = args[0]
+            
             if interval < 0 or interval > 24:
                 msg = "错误！您设置的时间间隔未在0-24之间，要求：0 <= 时间 <= 24"
-                return msg
-
-            msg = self.change_set_time("night", server, interval)
+            else:
+                msg = self._change_set_time("night", _setting, interval, None)
         
-        return msg
+        return MessageSegment.text(msg)
 
-    def night_switch(self, nig_server: str, enable: bool) -> str:
-        if nig_server not in nig_switcher.keys():
-            msg = f'在晚安设置中未找到"{nig_server}"，请确保输入正确，目前可选值有:'
-            for key in nig_switcher.keys():
-                msg += " " + key
-        else:   
-            server = nig_switcher[nig_server]
-            msg = self.change_config("night", server, enable)
+    def night_switch(self, _nig_setting: str, new_state: bool) -> MessageSegment:
+        '''
+            Enable/Disable of night settings.
+        '''
+        _setting: str = nig_switcher[_nig_setting]
+        msg: str = self._change_enable("night", _setting, new_state)
         
-        return msg
+        return MessageSegment.text(msg)
 
-# ------------------------------ morning judgement------------------------------ #
-
-    # 判断早安时间
-    @staticmethod
-    def judge_mor_time(early_time_tmp: str, late_time_tmp: str, now_time: datetime.datetime) -> bool:
-        early_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + f' {early_time_tmp}:00:00', '%Y-%m-%d %H:%M:%S')
-        late_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + f' {late_time_tmp}:00:00', '%Y-%m-%d %H:%M:%S')
-        if not now_time >= early_time or not now_time <= late_time:
-            return False
-        return True
-
-    # 判断多次早安
-    def judge_have_mor(self, group_id: str, user_id: str, now_time: datetime.datetime, interval: str) -> bool:
-        get_up_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['get_up_time'], '%Y-%m-%d %H:%M:%S')
-        # 上次起床时间和现在时间相差不超过f'{interval}'小时
-        if get_up_time + datetime.timedelta(hours = int(interval)) > now_time:
-            return True
-        return False
-
-    # 判断超级亢奋
-    def judge_super_get_up(self, group_id: str, user_id: str, now_time: datetime.datetime, interval: str) -> bool:
-        sleep_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['sleep_time'], '%Y-%m-%d %H:%M:%S')
-        # 上次睡觉时间和现在时间相差不超过f'{interval}'小时
-        if sleep_time + datetime.timedelta(hours = int(interval)) > now_time:
-            return True
-        return False
-
-    # 进行早安并更新数据
-    def morning_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> Tuple[str, Union[int, str]]:
+    # ------------------------------ Morning Judgement ------------------------------ #
+    def _morning_and_update(self, gid: str, uid: str, now_time: datetime) -> Tuple[str, Union[str, int]]:
+        '''
+            Morning & update data.
+        '''
+        self._load_data()
+        
         # 起床并写数据
-        sleep_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['sleep_time'], '%Y-%m-%d %H:%M:%S')
-        in_sleep = now_time - sleep_time
-        secs = in_sleep.total_seconds()
-        day = secs // (3600 * 24)
-        hour = (secs - day * 3600 * 24) // 3600
-        minute = (secs - day * 3600 * 24 - hour * 3600) // 60
-        second = secs - day * 3600 * 24 - hour * 3600 - minute * 60
-        # 睡觉时间小于24小时就同时给出睡眠时长
-        in_sleep_tmp = 0
-        if day == 0:
-            in_sleep_tmp = str(int(hour)) + '时' + str(int(minute)) + '分' + str(int(second)) + '秒'
-        self.user_data[group_id][user_id]['get_up_time'] = now_time.strftime("%Y-%m-%d %H:%M:%S")
-        self.user_data[group_id][user_id]['morning_count'] = int(self.user_data[group_id][user_id]['morning_count']) + 1
+        sleep_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+        in_sleep: timedelta = now_time - sleep_time
+        days, hours, minutes, seconds = total_seconds2tuple_time(int(in_sleep.total_seconds()))
+        
+        # 睡觉时间小于24小时就同时给出睡眠时长，记录；否则隔日
+        in_sleep_tmp: str = ""
+        
+        if in_sleep.days > 0:
+            in_sleep_tmp = ""
+        else:
+            in_sleep_tmp = f"{hours}时{minutes}分{seconds}秒"
+            self._morning[gid][uid]["weekly"]["weekly_sleep"] = sleeptime_update(self._morning[gid][uid]["weekly"]["weekly_sleep"], in_sleep)
+            self._morning[gid][uid]["total"]["total_sleep"] = sleeptime_update(self._morning[gid][uid]["total"]["total_sleep"], in_sleep)
+
+        # Daily morning time
+        self._morning[gid][uid]["daily"]["morning_time"] = now_time
+        # Weekly morning count add
+        self._morning[gid][uid]["weekly"]["weekly_morning_count"] += 1
+        # Total morning count add
+        self._morning[gid][uid]["total"]["morning_count"] += 1
+        
+        lastweek_emt: Union[int, str] = self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"]
+        
+        # If it is integer, it means no data
+        if isinstance(lastweek_emt, int):
+            self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"] = now_time
+        else:
+            # If weekly morning time is later than daily's, update
+            if not is_later(self._morning[gid][uid]["daily"]["morning_time"], self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"]):
+                self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"] = now_time
+        
         # 判断是今天第几个起床的
-        self.user_data[group_id]['today_count']['morning'] = int(self.user_data[group_id]['today_count']['morning']) + 1
-        self.save_data()
+        self._morning[gid]["group_count"]["daily"]["good_morning"] += 1
+        
+        self._save_data()
 
-        return self.user_data[group_id]['today_count']['morning'], in_sleep_tmp
+        return self._morning[gid]["group_count"]["daily"]["good_morning"], in_sleep_tmp if in_sleep_tmp != "" else 0
 
-    # 返回早安信息
-    def get_morning_msg(self, sex_str: str, event: GroupMessageEvent) -> str:
-        user_id = str(event.user_id)
-        group_id = str(event.group_id)
+    def get_morning_msg(self, gid: str, uid: str, sex_str: str) -> MessageSegment:
+        '''
+            Return good-morning info.
+        '''
+        self._load_config()
         
         # 若开启规定时间早安，则判断该时间是否允许早安
-        now_time = datetime.datetime.now()
-        if self.config['morning']['get_up_intime']['enable']:
-            early_time_tmp = self.config['morning']['get_up_intime']['early_time']
-            late_time_tmp = self.config['morning']['get_up_intime']['late_time']
-            if not MorningManager.judge_mor_time(early_time_tmp, late_time_tmp, now_time):
-                msg = f'现在不能早安哦，可以早安的时间为{early_time_tmp}时到{late_time_tmp}时~'
-                return msg
+        now_time: datetime = datetime.now()
+        if self._config["morning"]["morning_intime"]["enable"]:
+            _early_time: int = self._config["morning"]["morning_intime"]["early_time"]
+            _late_time: int = self._config["morning"]["morning_intime"]["late_time"]
+            
+            if not is_MorTimeinRange(_early_time, _late_time, now_time):
+                msg = f"现在不能早安哦，可以早安的时间为{_early_time}时到{_late_time}时~"
+                return MessageSegment.text(msg)
 
-        self._init_data(group_id)
+        self._init_group_data(gid)
         
-        # 当数据里有过这个人的信息就判断:
-        if user_id in self.user_data[group_id].keys():
+        # 当数据里有过这个人的信息
+        if uid in self._morning[gid]:
+            # 判断是否隔日
+            last_sleep_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+            if last_sleep_time - now_time < timedelta(hours=24):
             
-            # 若关闭连续多次早安，则判断在设定时间内是否多次早安
-            if not self.config['morning']['multi_get_up']['enable'] and self.user_data[group_id][user_id]['get_up_time'] != 0:
-                interval = self.config['morning']['multi_get_up']['interval']
-                if self.judge_have_mor(group_id, user_id, now_time, interval):
-                    msg = f'{interval}小时内你已经早安过了哦~'
-                    return msg
-            
-            # 若关闭超级亢奋，则判断睡眠时长是否小于设定时间
-            if not self.config['morning']['super_get_up']['enable']:
-                interval = self.config['morning']['super_get_up']['interval']
-                if self.judge_super_get_up(group_id, user_id, now_time, interval):
-                    msg = f'你可猝死算了吧？现在不能早安哦~'
-                    return msg
-            # 若没有说明他还没睡过觉呢
+                # 若关闭连续多次早安，则判断在设定时间内是否多次早安
+                if not self._config["morning"]["multi_get_up"]["enable"] and self._morning[gid][uid]["daily"]["morning_time"] != 0:
+                    interval: int = self._config["morning"]["multi_get_up"]["interval"]
+                    morning_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+                    
+                    if now_time - morning_time < timedelta(hours=interval):
+                        msg = f"{interval}小时内你已经早安过了哦~"
+                        return MessageSegment.text(msg)
+                
+                # 若关闭超级亢奋，则判断睡眠时长是否小于设定时间
+                if not self._config["morning"]["super_get_up"]["enable"]:
+                    interval: int = self._config["morning"]["super_get_up"]["interval"]
+                    night_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+                    
+                    if now_time - night_time < timedelta(hours=interval):
+                        msg = "你可猝死算了吧？现在不能早安哦~"
+                        return MessageSegment.text(msg)
+            # 有信息但是隔日
+            else:
+                msg = random.choice(morning_prompt)
+                return MessageSegment.text(msg)
+                  
+        # 否则说明：他还没睡过觉；即便如此，还是回复早安！
         else:
-            msg = '你还没睡过觉呢！不能早安哦~'
-            return msg
-
+            msg = random.choice(morning_prompt)
+            return MessageSegment.text(msg)
+            
         # 当前面条件均符合的时候，允许早安
-        num, in_sleep = self.morning_and_update(now_time, group_id, user_id)
-        if in_sleep == 0:
-            msg = f'早安成功！你是今天第{num}个起床的{sex_str}！'
+        num, in_sleep = self._morning_and_update(gid, uid, now_time)
+        if isinstance(in_sleep, str):
+            msg = f"早安成功！你的睡眠时长为{in_sleep}，\n你是今早第{num}个起床的{sex_str}！"
         else:
-            msg = f'早安成功！你的睡眠时长为{in_sleep}，\n你是今天第{num}个起床的{sex_str}！'
-        return msg
+            msg = random.choice(morning_prompt)
+ 
+        return MessageSegment.text(msg)
 
-# ------------------------------ night judgement ------------------------------ #
-
-    # 判断晚安时间
-    @staticmethod
-    def judge_sle_time(early_time_tmp: str, late_time_tmp: str, now_time: datetime.datetime) -> bool:
-        early_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + f' {early_time_tmp}:00:00', '%Y-%m-%d %H:%M:%S')
-        late_time = datetime.datetime.strptime(str(datetime.datetime.now().date()) + f' {late_time_tmp}:00:00', '%Y-%m-%d %H:%M:%S')
-        if now_time < early_time and now_time > late_time:
-            return False
-        return True
-
-    # 判断多次晚安
-    def judge_have_sle(self, group_id: str, user_id: str, now_time: datetime.datetime, interval: str) -> bool:
-        sleep_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['sleep_time'], '%Y-%m-%d %H:%M:%S')
-        # 上次晚安时间和现在时间相差不超过f'{interval}'小时
-        if sleep_time + datetime.timedelta(hours = int(interval)) > now_time:
-            return True
-        return False
-
-    # 判断深度睡眠
-    def judge_deep_sleep(self, group_id: str, user_id: str, now_time: datetime.datetime, interval: str) -> bool:
-        get_up_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['get_up_time'], '%Y-%m-%d %H:%M:%S')
-        # 上次起床时间和现在时间相差不超过f'{interval}'小时
-        if get_up_time + datetime.timedelta(hours = int(interval)) > now_time:
-            return True
-        return False
-
-    # 进行晚安并更新数据
-    def night_and_update(self, now_time: datetime.datetime, group_id: str, user_id: str) -> Tuple[str, Union[int, str]]:
-        # 若之前没有数据就直接创建一个
-        if user_id not in self.user_data[group_id].keys():
-            self.user_data[group_id][user_id] = {
-                "morning_count": 0,
-                "get_up_time": 0,
-                "night_count": 1,
-                "sleep_time": now_time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+    # ------------------------------ Night Judgement ------------------------------ #
+    def _night_and_update(self, gid: str, uid: str, now_time: datetime) -> Tuple[str, Union[str, int]]:
+        '''
+            Good night & update.
+        '''
+        self._load_data()
+        
+        # 没有晚安数据，则创建
+        if uid not in self._morning[gid]:
+            self._morning[gid].update({
+                uid: {
+                    "daily": {
+                        "morning_time": 0, 
+                        "night_time": now_time
+                    },
+                    "weekly": {
+                        "weekly_morning_count": 0,          # Weekly good-morning count,                RESET at the late time of good-morning every Monday
+                        "weekly_night_count": 1,            # Weekly good-night count,                  RESET at 0 A.M. every Monday
+                        "weekly_sleep": [0, 0, 0, 0],       # Weekly sleeping time, list of days/hrs/mins/secs, RESET at the late time of good-morning every Monday
+                        "lastweek_morning_count": 0,        # Good-morning count of last week,          REFRESH at the late time of good-morning every Monday
+                        "lastweek_night_count": 0,          # Good-night count of last week,            REFRESH at 0 A.M. every Monday
+                        "lastweek_sleep": [0, 0, 0, 0],     # Sleeping time of last week, list of days/hrs/mins/secs, REFRESH at the late time of good-morning every Monday
+                        "lastweek_earliest_morning_time": 0,# Earliest good-morning time of last week,  REFRESH at a new daily good-morning time in
+                        "lastweek_latest_night_time": 0     # Latest good-night time of last week,      REFRESH at a new daily good-night time in
+                    },
+                    "total": {
+                        "morning_count": 0,                 # Total good-morning count, never RESET
+                        "night_count": 1,                   # Total good-night count, never RESET
+                        "total_sleep": [0, 0, 0, 0]         # Total sleeping time, list of days/hrs/mins/secs, REFRESH at every valid good-morning
+                    }
+                }
+            })
+            
+            self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = self._morning[gid][uid]["daily"]["night_time"]
+            
         # 若有就更新数据
         else:
-            self.user_data[group_id][user_id]['sleep_time'] = now_time.strftime("%Y-%m-%d %H:%M:%S")
-            self.user_data[group_id][user_id]['night_count'] = int(self.user_data[group_id][user_id]['night_count']) + 1
-        # 当上次起床时间不是初始值0,就计算清醒的时长
-        in_day_tmp = 0
-        if self.user_data[group_id][user_id]['get_up_time'] != 0:
-            get_up_time = datetime.datetime.strptime(self.user_data[group_id][user_id]['get_up_time'], '%Y-%m-%d %H:%M:%S')
-            in_day = now_time - get_up_time
-            secs = in_day.total_seconds()
-            day = secs // (3600 * 24)
-            hour = (secs - day * 3600 * 24) // 3600
-            minute = (secs - day * 3600 * 24 - hour * 3600) // 60
-            second = secs - day * 3600 * 24 - hour * 3600 - minute * 60
-            if day == 0:
-                in_day_tmp = str(int(hour)) + '时' + str(int(minute)) + '分' + str(int(second)) + '秒'
+            # Daily night time
+            self._morning[gid][uid]["daily"]["night_time"] = now_time
+            # Weekly night count add
+            self._morning[gid][uid]["weekly"]["weekly_night_count"] += 1
+            # Total night count add
+            self._morning[gid][uid]["total"]["night_count"] += 1
+            
+            lastweek_lnt: Union[int, str] = self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"]
+        
+            # If lastweek_lnt is integer, it means no data
+            if isinstance(lastweek_lnt, int):
+                self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = now_time
+            else:
+                # If daily sleep time is later than weekly's, update
+                if is_later(self._morning[gid][uid]["daily"]["night_time"], self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"]):
+                    self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"] = now_time
+          
+        # 当上次起床时间非0，计算清醒时长
+        in_day_tmp: str = ""
+        if self._morning[gid][uid]["daily"].get("morning_time", 0) != 0:
+            get_up_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+            in_day: timedelta = now_time - get_up_time
+            _, hours, minutes, seconds = total_seconds2tuple_time(int(in_day.total_seconds()))
+            
+            if in_day.days > 0:
+                in_day_tmp = ""
+            else:
+                in_day_tmp = f"{hours}时{minutes}分{seconds}秒"
+
         # 判断是今天第几个睡觉的
-        self.user_data[group_id]['today_count']['night'] = int(self.user_data[group_id]['today_count']['night']) + 1
-        self.save_data()
+        self._morning[gid]["group_count"]["daily"]["good_night"] += 1
+        
+        self._save_data()
 
-        return self.user_data[group_id]['today_count']['night'], in_day_tmp
+        return self._morning[gid]["group_count"]["daily"]["good_night"], in_day_tmp if in_day_tmp != "" else 0
 
-    # 返回晚安信息
-    def get_night_msg(self, sex_str: str, event: GroupMessageEvent) -> str:
-        user_id = str(event.user_id)
-        group_id = str(event.group_id)
-
+    def get_night_msg(self, gid: str, uid: str, sex_str: str) -> MessageSegment:
+        '''
+            Return good-night info.
+        '''
+        self._load_config()
+        
         # 若开启规定时间晚安，则判断该时间是否允许晚安
-        now_time = datetime.datetime.now()
-        if self.config['night']['sleep_intime']['enable']:
-            early_time_tmp = self.config['night']['sleep_intime']['early_time']
-            late_time_tmp = self.config['night']['sleep_intime']['late_time']
-            if not MorningManager.judge_sle_time(early_time_tmp, late_time_tmp, now_time):
-                msg = f'现在不能晚安哦，可以晚安的时间为{early_time_tmp}时到第二天早上{late_time_tmp}时~'
-                return msg
+        now_time: datetime = datetime.now()
+        if self._config["night"]["night_intime"]["enable"]:
+            _early_time: int = self._config["night"]["night_intime"]["early_time"]
+            _late_time: int = self._config["night"]["night_intime"]["late_time"]
+            
+            if not is_NigTimeinRange(_early_time, _late_time, now_time):
+                msg = f'现在不能晚安哦，可以晚安的时间为{_early_time}时到第二天早上{_late_time}时~'
+                return MessageSegment.text(msg)
 
-        self._init_data(group_id)
+        self._init_group_data(gid)
 
         # 当数据里有过这个人的信息就判断:
-        if user_id in self.user_data[group_id].keys():
-
+        if uid in self._morning[gid]:
+            
             # 若开启优质睡眠，则判断在设定时间内是否多次晚安
-            if self.config['night']['good_sleep']['enable']:
-                interval = self.config['night']['good_sleep']['interval']
-                if self.judge_have_sle(group_id, user_id, now_time, interval):
+            if self._config["night"]["good_sleep"]["enable"]:
+                interval: int = self._config["night"]["good_sleep"]["interval"]
+                night_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
+                
+                if now_time - night_time < timedelta(hours=interval):
                     msg = f'{interval}小时内你已经晚安过了哦~'
-                    return msg
+                    return MessageSegment.text(msg)
             
             # 若关闭深度睡眠，则判断不在睡觉的时长是否小于设定时长
-            if not self.config['night']['deep_sleep']['enable'] and self.user_data[group_id][user_id]['get_up_time'] != 0:
-                interval = self.config['night']['deep_sleep']['interval']
-                if self.judge_deep_sleep(group_id, user_id, now_time, interval):
-                    msg = f'睡这么久还不够？现在不能晚安哦~'
-                    return msg
+            if isinstance(self._morning[gid][uid]["daily"]["morning_time"], str):
+                if not self._config["night"]["deep_sleep"]["enable"]:
+                    interval: int = self._config["night"]["deep_sleep"]["interval"]
+                    morning_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["morning_time"], "%Y-%m-%d %H:%M:%S")
+                    
+                    if now_time - morning_time < timedelta(hours=interval):
+                        msg = "睡这么久还不够？现在不能晚安哦~"
+                        return MessageSegment.text(msg)
 
         # 当数据里没有这个人或者前面条件均符合的时候，允许晚安
-        num, in_day = self.night_and_update(now_time, group_id, user_id)
-        if in_day == 0:
-            msg = f'晚安成功！你是今天第{num}个睡觉的{sex_str}！'
+        num, in_day = self._night_and_update(gid, uid, now_time)
+        if isinstance(in_day, int):
+            msg = f'晚安成功！你是今晚第{num}个睡觉的{sex_str}！'
         else:
-            msg = f'晚安成功！你今天的清醒时长为{in_day}，\n你是今天第{num}个睡觉的{sex_str}！'
-        return msg
+            msg = f'晚安成功！你今天的清醒时长为{in_day}，\n你是今晚第{num}个睡觉的{sex_str}！'
+            
+        return MessageSegment.text(msg)
     
-# ------------------------------ routine ------------------------------ #
-
-    def get_routine(self, event: GroupMessageEvent) -> str:
-        group_id = str(event.group_id)
-        user_id = str(event.user_id)
-
-        self._init_data(group_id)
-        if user_id in self.user_data[group_id].keys():
-            get_up_time = self.user_data[group_id][user_id]['get_up_time']
-            sleep_time = self.user_data[group_id][user_id]['sleep_time']
-            morning_count = self.user_data[group_id][user_id]['morning_count']
-            night_count = self.user_data[group_id][user_id]['night_count']
-            msg = f'您的作息数据如下：'
-            msg += f'\n最近一次起床时间为{get_up_time}'
-            msg += f'\n最近一次睡觉时间为{sleep_time}'
-            msg += f'\n一共起床了{morning_count}次'
-            msg += f'\n一共睡觉了{night_count}次'
-        else:
-            msg = '您还没有睡觉起床过呢！暂无数据~'
+    # ------------------------------ Routine ------------------------------ #
+    def get_my_routine(self, gid: str, uid: str) -> MessageSegment:
+        '''
+            Get user's routine.
+            
+            If on Monday and now is later than the latest time of good-morning of Monday, good-morning/night count of last week & sleeping time will be included.
+            
+            Else, add weekly info of current week.
+        '''
+        self._init_group_data(gid)
         
-        return msg
+        now_time: datetime = datetime.now()
+        today: int = now_time.weekday()
+        
+        if uid in self._morning[gid]:
+            # Daily info
+            get_up_time: str = self._morning[gid][uid]["daily"]["morning_time"]
+            sleep_time: str = self._morning[gid][uid]["daily"]["night_time"]
+            
+            # Total info
+            morning_count: int = self._morning[gid][uid]["total"]["morning_count"]
+            night_count: int = self._morning[gid][uid]["total"]["night_count"]
+            total_sleep: List[int] = self._morning[gid][uid]["total"]["total_sleep"]
+            
+            msg = "你的作息数据如下："
+            msg += f"\n最近一次早安时间为{get_up_time}"
+            msg += f"\n最近一次晚安时间为{sleep_time}"
+            
+            week_list: List[str] = ["一", "二", "三", "四", "五", "六", "日"]
+                
+            # When on Monday and now time is later than the latest time of good-morning
+            if today == MONDAY:
+                threshold_hour: int = self.get_refresh_time("morning", "late_time")
+                
+                if threshold_hour != -1 and is_later_oclock(now_time, threshold_hour):
+                    lastweek_morning_count: int = self._morning[gid][uid]["weekly"]["lastweek_morning_count"]
+                    lastweek_night_count: int = self._morning[gid][uid]["weekly"]["lastweek_night_count"]
+                    lastweek_sleep: List[int] = self._morning[gid][uid]["weekly"]["lastweek_sleep"]
+                    
+                    lastweek_lnt_date: datetime = datetime.strptime(self._morning[gid][uid]["weekly"]["lastweek_latest_night_time"], "%Y-%m-%d %H:%M:%S")
+                    lastweek_lnt: time = lastweek_lnt_date.time()
+                    latest_day: int = lastweek_lnt_date.weekday()
+                    
+                    lastweek_emt_date: datetime = datetime.strptime(self._morning[gid][uid]["weekly"]["lastweek_earliest_morning_time"], "%Y-%m-%d %H:%M:%S")
+                    lastweek_emt: time = lastweek_emt_date.time()
+                    earliest_day: int = lastweek_emt_date.weekday()
+                    
+                    msg += f"\n上周早安了{lastweek_morning_count}次"
+                    msg += f"\n上周晚安了{lastweek_night_count}次"
+                    msg += f"\n上周睡眠时间为{lastweek_sleep[0]}天{lastweek_sleep[1]}时{lastweek_sleep[2]}分{lastweek_sleep[3]}秒"
+                    msg += f"\n上周最晚晚安时间是周{week_list[latest_day]} {lastweek_lnt}"
+                    msg += f"\n上周最早早安时间是周{week_list[earliest_day]} {lastweek_emt}"
+            
+            # Not on Monday, add weekly info
+            else:
+                weekly_morning_count: int = self._morning[gid][uid]["weekly"]["weekly_morning_count"]
+                weekly_night_count: int = self._morning[gid][uid]["weekly"]["weekly_night_count"]
+                
+                msg += f"\n本周早安了{weekly_morning_count}次"
+                msg += f"\n本周晚安了{weekly_night_count}次"
+                
+            msg += f"\n一共早安了{morning_count}次"
+            msg += f"\n一共晚安了{night_count}次"
+            msg += f"\n一共睡眠了{total_sleep[0]}天{total_sleep[1]}时{total_sleep[2]}分{total_sleep[3]}秒"
+        else:
+            msg = "你本周还没有早晚安过呢！暂无数据~"
+        
+        return MessageSegment.text(msg)
 
-    def get_group_routine(self, event: GroupMessageEvent) -> str:
-        group_id = str(event.group_id)
+    def get_group_routine(self, gid: str) -> Tuple[int, int, Optional[str]]:
+        '''
+            Get group's routine: daily good-morning/night count.
+            If on Monday and now is later than the latest time of good-morning of Monday, add sleeping king of last week.
+        '''
+        self._init_group_data(gid)
+        
+        now_time: datetime = datetime.now()
+        today: int = now_time.weekday()
+        
+        morning_count: int = self._morning[gid]["group_count"]["daily"]["good_morning"]
+        night_count: int = self._morning[gid]["group_count"]["daily"]["good_night"]        
+        
+        if today == MONDAY:
+            uid: str = ""
+            threshold_hour: int = self.get_refresh_time("morning", "late_time")
+            
+            if threshold_hour != -1 and is_later_oclock(now_time, threshold_hour):
+                uid = self._morning[gid]["group_count"]["weekly"]["sleeping_king"]
+            
+            return morning_count, night_count, uid if uid != "" else None
+        
+        return morning_count, night_count, None
 
-        self._init_data(group_id)
-        moring_count = self.user_data[group_id]['today_count']['morning']
-        night_count = self.user_data[group_id]['today_count']['night']
-        msg = f'今天已经有{moring_count}位群友起床了，{night_count}位群友睡觉了~'
+    # ------------------------------ Utils ------------------------------ #
+    def _save_data(self) -> None:
+        with open(self._morning_path, 'w', encoding='utf-8') as f:
+            json.dump(self._morning, f, ensure_ascii=False, indent=4, cls=DateTimeEncoder)
+                
+    def _save_config(self) -> None:
+        with open(self._config_path, 'w', encoding='utf-8') as f:
+            json.dump(self._config, f, ensure_ascii=False, indent=4)
 
-        return msg
+    def _load_data(self) -> None:
+        with open(self._morning_path, "r", encoding="utf-8") as f:
+            self._morning = json.load(f)
+        
+    def _load_config(self) -> None:
+        with open(self._config_path, "r", encoding="utf-8") as f:
+            self._config = json.load(f)
+            
+    def get_refresh_time(self, _type: str, key: str) -> int:
+        '''
+            Get the time given a specific type and key.
+        '''
+        self._load_config()
+        
+        if _type == "morning":
+            return self._config[_type]["morning_intime"][key] if self._config[_type]["morning_intime"]["enable"] else -1
 
-morning_manager = MorningManager(Path(MORNING_PATH))
+        if _type == "night":
+            return self._config[_type]["night_intime"][key] if self._config[_type]["night_intime"]["enable"] else -1
+        
+    def daily_scheduler(self, hours: Optional[int] = None) -> None:
+        '''
+            Run the scheduler for refreshing daily good-morning/night counts. Replace the existing scheduler.
+        '''
+        if isinstance(hours, int):
+            _hours = hours
+        else:
+            _hours = self.get_refresh_time("night", "early_time")
+        
+        if _hours != -1:
+            scheduler.add_job(
+                self.daily_refresh,
+                "cron",
+                id="daily_scheduler",
+                replace_existing=True,
+                hour=_hours,
+                minute=0,
+                misfire_grace_time=60
+            )
+
+    def weekly_sleep_time_scheduler(self, hours: Optional[int] = None) -> None:
+        '''
+            Run the scheduler for refreshing the weekly sleeping time. Replace the existing scheduler.
+        '''
+        if isinstance(hours, int):
+            _hours = hours
+        else:
+            _hours = self.get_refresh_time("morning", "late_time")
+        
+        if _hours != -1:
+            scheduler.add_job(
+                self.weekly_sleep_time_refresh,
+                "cron",
+                id="weekly_sleep_time_scheduler",
+                replace_existing=True,
+                hour=_hours,
+                minute=0,
+                day_of_week="1",
+                misfire_grace_time=60
+            )
+
+morning_manager = MorningManager()
+
+__all__ = [
+    morning_manager
+]
