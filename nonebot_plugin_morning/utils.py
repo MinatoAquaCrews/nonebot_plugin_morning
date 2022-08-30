@@ -54,6 +54,7 @@ def total_seconds2tuple_time(secs: int) -> Tuple[int, int, int, int]:
 def sleeptime_update(_lold: List[int], _sleep: timedelta) -> List[int]:
     '''
         Add a timedelta to another one
+        - _lold: days, hrs, mins, secs
     '''
     t_old: timedelta = timedelta(days=_lold[0], hours=_lold[1], minutes=_lold[2], seconds=_lold[3])
     t_new: timedelta = t_old + _sleep

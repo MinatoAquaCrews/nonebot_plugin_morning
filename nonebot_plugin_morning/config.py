@@ -7,7 +7,6 @@ from .utils import morning_json_update
 
 class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"
-    old_morning_compatible: bool = True
     
 mor_switcher: Dict[str, str] = {
     "时限": "morning_intime",
@@ -102,7 +101,7 @@ async def _() -> None:
     new_data_path: Path = morning_config.morning_path / "morning.json"
 
     if not new_data_path.exists():
-        if morning_config.old_morning_compatible and old_data_path.exists():
+        if old_data_path.exists():
             with open(old_data_path, 'r', encoding='utf-8') as f:
                 _d: Dict[str, Dict[str, Dict[str, int]]] = json.load(f)
                 _nfile = morning_json_update(_d)
@@ -112,7 +111,9 @@ async def _() -> None:
                     json.dump(_nfile, f, ensure_ascii=False, indent=4)
                 
                 logger.info("旧版数据文件已自动更新至新版，后续可关闭 OLD_MORNING_COMPATIBLE 选项！")
-                old_data_path.unlink()
+            
+            old_data_path.unlink()
+            
         else:
             with open(new_data_path, 'w', encoding='utf-8') as f:
                 json.dump(dict(), f, ensure_ascii=False, indent=4)
