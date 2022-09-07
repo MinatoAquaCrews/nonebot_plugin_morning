@@ -10,7 +10,7 @@ from .data_source import morning_manager
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
-__morning_version__ = "v0.3.0"
+__morning_version__ = "v0.3.1a1"
 __morning_notes__ = f'''
 おはよう！ {__morning_version__}
 [早安] 早安/哦哈哟/おはよう
@@ -322,7 +322,7 @@ async def daily_refresh():
     logger.info("每日早晚安定时刷新任务已启动！")
 
 # 每周一零点统计部分周数据
-@scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="1", misfire_grace_time=60)
+@scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="0", misfire_grace_time=60)
 async def monday_refresh():
     morning_manager.weekly_night_refresh()
     logger.info("每周晚安已刷新！")

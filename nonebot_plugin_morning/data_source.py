@@ -687,7 +687,7 @@ class MorningManager:
                 replace_existing=True,
                 hour=_hours,
                 minute=0,
-                day_of_week="1",
+                day_of_week="0",    # From Monday to Sunday: 0~6 
                 misfire_grace_time=60
             )
 

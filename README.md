@@ -18,23 +18,23 @@ _🌈 おはよう！ 🌈_
     <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.1a1">
     <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
   </a>
 
   <a href="https://www.codefactor.io/repository/github/MinatoAquaCrews/nonebot_plugin_morning">
-    <img src="https://img.shields.io/codefactor/grade/github/MinatoAquaCrews/nonebot_plugin_morning/main?color=red">
+    <img src="https://img.shields.io/codefactor/grade/github/MinatoAquaCrews/nonebot_plugin_morning/beta?color=red">
   </a>
   
 </p>
 
 ## 版本
 
-v0.3.0
+v0.3.1a1
 
 ⚠ 适配nonebot2-2.0.0beta.3+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.0)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.1a1)
 
 ## 安装
 
