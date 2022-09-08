@@ -1,6 +1,6 @@
-from calendar import MONDAY
 from nonebot import require
 from nonebot.adapters.onebot.v11 import MessageSegment
+from calendar import MONDAY
 from typing import Union, List, Dict, Optional, Tuple
 from pathlib import Path
 from datetime import datetime, time
@@ -492,7 +492,7 @@ class MorningManager:
             _late_time: int = self._config["night"]["night_intime"]["late_time"]
             
             if not is_NigTimeinRange(_early_time, _late_time, now_time):
-                msg = f'现在不能晚安哦，可以晚安的时间为{_early_time}时到第二天早上{_late_time}时~'
+                msg = f"现在不能晚安哦，可以晚安的时间为{_early_time}时到第二天早上{_late_time}时~"
                 return MessageSegment.text(msg)
 
         self._init_group_data(gid)
@@ -506,7 +506,7 @@ class MorningManager:
                 night_time: datetime = datetime.strptime(self._morning[gid][uid]["daily"]["night_time"], "%Y-%m-%d %H:%M:%S")
                 
                 if now_time - night_time < timedelta(hours=interval):
-                    msg = f'{interval}小时内你已经晚安过了哦~'
+                    msg = f"{interval}小时内你已经晚安过了哦~"
                     return MessageSegment.text(msg)
             
             # 若关闭深度睡眠，则判断不在睡觉的时长是否小于设定时长
@@ -522,9 +522,9 @@ class MorningManager:
         # 当数据里没有这个人或者前面条件均符合的时候，允许晚安
         num, in_day = self._night_and_update(gid, uid, now_time)
         if isinstance(in_day, int):
-            msg = f'晚安成功！你是今晚第{num}个睡觉的{sex_str}！'
+            msg = f"晚安成功！你是今晚第{num}个睡觉的{sex_str}！"
         else:
-            msg = f'晚安成功！你今天的清醒时长为{in_day}，\n你是今晚第{num}个睡觉的{sex_str}！'
+            msg = f"晚安成功！你今天的清醒时长为{in_day}，\n你是今晚第{num}个睡觉的{sex_str}！"
             
         return MessageSegment.text(msg)
     
@@ -552,7 +552,7 @@ class MorningManager:
             night_count: int = self._morning[gid][uid]["total"]["night_count"]
             total_sleep: List[int] = self._morning[gid][uid]["total"]["total_sleep"]
             
-            msg = "你的作息数据如下："
+            msg: str = "你的作息数据如下："
             msg += f"\n最近一次早安时间为{get_up_time}"
             msg += f"\n最近一次晚安时间为{sleep_time}"
             
@@ -638,17 +638,17 @@ class MorningManager:
         with open(self._config_path, "r", encoding="utf-8") as f:
             self._config = json.load(f)
             
-    def get_refresh_time(self, _type: str, key: str) -> int:
+    def get_refresh_time(self, day_or_night: str, key: str) -> int:
         '''
-            Get the time given a specific type and key.
+            Get the time given the specific type(day or night) and key.
         '''
         self._load_config()
         
-        if _type == "morning":
-            return self._config[_type]["morning_intime"][key] if self._config[_type]["morning_intime"]["enable"] else -1
+        if day_or_night == "morning":
+            return self._config[day_or_night]["morning_intime"][key] if self._config[day_or_night]["morning_intime"]["enable"] else -1
 
-        if _type == "night":
-            return self._config[_type]["night_intime"][key] if self._config[_type]["night_intime"]["enable"] else -1
+        if day_or_night == "night":
+            return self._config[day_or_night]["night_intime"][key] if self._config[day_or_night]["night_intime"]["enable"] else -1
         
     def daily_scheduler(self, hours: Optional[int] = None) -> None:
         '''
