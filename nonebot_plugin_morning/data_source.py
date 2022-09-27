@@ -153,8 +153,8 @@ class MorningManager:
         
     def weekly_night_refresh(self) -> None:
         '''
-            1. Refresh good-night count of last week at 0 A.M. every Monday.
-            2. Reset weekly good-night count at 0 A.M. every Monday.
+            1. Refresh good-night count of last week at the late time of good-night.
+            2. Reset weekly good-night count at the late time of good-night.
         '''
         self._load_data()
         
@@ -667,6 +667,24 @@ class MorningManager:
                 replace_existing=True,
                 hour=_hours,
                 minute=0,
+                misfire_grace_time=60
+            )
+    
+    def weekly_night_scheduler(self) -> None:
+        '''
+            Run the scheduler for refreshing the weekly good-night time. Replace the existinf scheduler.
+        '''
+        _hours = self.get_refresh_time("night", "late_time")
+        
+        if _hours != -1:
+            scheduler.add_job(
+                self.weekly_night_refresh,
+                "cron",
+                id="weekly_night_scheduler",
+                replace_existing=True,
+                hours=_hours,
+                minute=0,
+                day_of_week="0",    # From Monday to Sunday: 0~6 
                 misfire_grace_time=60
             )
 

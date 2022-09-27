@@ -26,6 +26,11 @@ morning_prompt: List[str] = [
     "早安～",
     "哦哈哟！"
 ]
+
+night_the_latest: List[str] = [
+    "是加班到这么晚吗？",
+    "睡这么晚不怕猝死吗？"
+]
     
 driver = get_driver()
 morning_config: PluginConfig = PluginConfig.parse_obj(driver.config.dict())
