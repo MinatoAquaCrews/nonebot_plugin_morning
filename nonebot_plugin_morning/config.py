@@ -8,6 +8,39 @@ from .utils import morning_json_update
 class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"
     
+default_config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = {
+    "morning": {
+        "morning_intime": {
+            "enable": True,
+            "early_time": 6,
+            "late_time": 12
+        },
+        "multi_get_up": {
+            "enable": False,
+            "interval": 6
+        },
+        "super_get_up": {
+            "enable": False,
+            "interval": 3
+        }
+    },
+    "night": {
+        "night_intime": {
+            "enable": True,
+            "early_time": 21,
+            "late_time": 6
+        },
+        "good_sleep": {
+            "enable": True,
+            "interval": 6
+        },
+        "deep_sleep": {
+            "enable": False,
+            "interval": 3
+        }
+    }
+}
+    
 mor_switcher: Dict[str, str] = {
     "时限": "morning_intime",
     "多重起床": "multi_get_up",
@@ -41,39 +74,9 @@ async def _() -> None:
         morning_config.morning_path.mkdir(parents=True, exist_ok=True)
     
     config_json_path: Path = morning_config.morning_path / "config.json"
-    # Initial value of config.json
-    _config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = {
-        "morning": {
-            "morning_intime": {
-                "enable": True,
-                "early_time": 6,
-                "late_time": 12
-            },
-            "multi_get_up": {
-                "enable": False,
-                "interval": 6
-            },
-            "super_get_up": {
-                "enable": False,
-                "interval": 3
-            }
-        },
-        "night": {
-            "night_intime": {
-                "enable": True,
-                "early_time": 21,
-                "late_time": 6
-            },
-            "good_sleep": {
-                "enable": True,
-                "interval": 6
-            },
-            "deep_sleep": {
-                "enable": False,
-                "interval": 3
-            }
-        }
-    }
+    
+    # Initial default config, global for all groups
+    _config: Dict[str, Dict[str, Dict[str, Dict[str, Union[bool, int]]]]] = {"default": default_config}
     
     if not config_json_path.exists():
         with open(config_json_path, 'w', encoding='utf-8') as f:

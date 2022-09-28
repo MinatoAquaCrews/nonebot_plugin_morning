@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta, date
 from typing import Union, Tuple, List, Dict
 import json
+from enum import Enum
+
+class SchedulerMode(Enum):
+    ALL_GROUP = 0
+    SPECIFIC_GROUP = 1
+    SPECIFIC_GROUP_AND_HOUR = 2
 
 class DateTimeEncoder(json.JSONEncoder):
     
