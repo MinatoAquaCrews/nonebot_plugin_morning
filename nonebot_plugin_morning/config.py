@@ -9,33 +9,34 @@ class PluginConfig(BaseModel, extra=Extra.ignore):
     morning_path: Path = Path(__file__).parent / "resource"
     
 default_config: Dict[str, Dict[str, Dict[str, Union[bool, int]]]] = {
+    # When a group change one of these config, create one in specific
     "morning": {
         "morning_intime": {
-            "enable": True,
+            "enable": True,     # ALWAYS enable in default
             "early_time": 6,
             "late_time": 12
         },
         "multi_get_up": {
-            "enable": False,
+            "enable": False,    # ALWAYS disable in default
             "interval": 6
         },
         "super_get_up": {
-            "enable": False,
+            "enable": False,    # ALWAYS disable in default
             "interval": 3
         }
     },
     "night": {
         "night_intime": {
-            "enable": True,
+            "enable": True,     # ALWAYS enable in default
             "early_time": 21,
             "late_time": 6
         },
         "good_sleep": {
-            "enable": True,
+            "enable": True,     # ALWAYS enable in default
             "interval": 6
         },
         "deep_sleep": {
-            "enable": False,
+            "enable": False,    # ALWAYS disable in default
             "interval": 3
         }
     }

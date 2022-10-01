@@ -7,6 +7,10 @@ class SchedulerMode(Enum):
     ALL_GROUP = 0
     SPECIFIC_GROUP = 1
     SPECIFIC_GROUP_AND_HOUR = 2
+    
+class RefreshMode(Enum):
+    DEFAULT_GROUPS = 0
+    SPECIFIC_GROUP = 1
 
 class DateTimeEncoder(json.JSONEncoder):
     

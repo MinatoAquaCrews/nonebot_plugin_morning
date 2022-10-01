@@ -4,6 +4,7 @@ from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, MessageSegment, GroupMessageEvent
 from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
+from nonebot_plugin_morning.utils import SchedulerMode
 from .config import driver
 from .data_source import morning_manager
 
@@ -315,17 +316,17 @@ async def _(matcher: Matcher):
 # 每日最早晚安时间，重置昨日早晚安计数
 @driver.on_startup
 async def daily_refresh():
-    morning_manager.daily_scheduler()
+    morning_manager.daily_scheduler(SchedulerMode.ALL_GROUP)
     logger.info("每日早晚安定时刷新任务已启动！")
 
 # 每周一最晚晚安时间统计部分周数据
 @driver.on_startup
-async def monday_refresh():
-    morning_manager.weekly_night_scheduler()
+async def monday_weekly_night_refresh():
+    morning_manager.weekly_night_scheduler(SchedulerMode.ALL_GROUP)
     logger.info("每周晚安定时刷新任务已启动！")
 
 # 每周一最晚早安时间，统计上周睡眠时间、早安并重置
 @driver.on_startup
 async def weekly_refresh():
-    morning_manager.weekly_sleep_time_scheduler()
+    morning_manager.weekly_sleep_time_scheduler(SchedulerMode.ALL_GROUP)
     logger.info("每周睡眠时间定时刷新任务已启动！")

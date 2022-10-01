@@ -147,52 +147,97 @@ class MorningManager:
             
         return msg
         
-    def group_daily_refresh(self, gid: str) -> None:
+    def group_daily_refresh(self, _mode: RefreshMode, gid: Optional[str] = None) -> None:
         '''
-            Reset good-morning/night count of a SPECIFIC group of yesterday at the earliest time of daily good-night.
+            Reset good-morning/night count of groups of yesterday at the earliest time of daily good-night.
         '''
         self._load_data()
+        self._load_config()
         
-        self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
-        self._morning[gid]["group_count"]["daily"]["good_night"] = 0
+        if _mode == RefreshMode.DEFAULT_GROUPS:
+            # Refresh for groups in default config
+            for gid in self._morning:
+                if gid not in self._config:
+                    self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
+                    self._morning[gid]["group_count"]["daily"]["good_night"] = 0
+        
+        elif _mode == RefreshMode.SPECIFIC_GROUP:
+            # Refresh for groups in user config
+            if isinstance(gid, str):
+                self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
+                self._morning[gid]["group_count"]["daily"]["good_night"] = 0
         
         self._save_data()
         
-    def weekly_night_refresh(self) -> None:
+    def weekly_night_refresh(self, mode: RefreshMode, gid: Optional[str] = None) -> None:
         '''
             1. Refresh good-night count of last week at the late time of good-night.
             2. Reset weekly good-night count at the late time of good-night.
         '''
         self._load_data()
+        self._load_config()
         
-        for gid in self._morning:
-            for uid, user_items in self._morning[gid].items():
-                # Remember to jump over the key "group_count"
-                if uid == "group_count":
-                    continue
-                
-                user_items["weekly"]["lastweek_night_count"] = user_items["weekly"]["weekly_night_count"]
-                user_items["weekly"]["weekly_night_count"] = 0
-                
+        if mode == RefreshMode.DEFAULT_GROUPS:
+            # Refresh for groups in default config
+            for gid in self._morning:
+                if gid not in self._config:
+                    for uid, user_items in self._morning[gid].items():
+                        # Remember to jump over the key "group_count"
+                        if uid == "group_count":
+                            continue
+                        
+                        user_items["weekly"]["lastweek_night_count"] = user_items["weekly"]["weekly_night_count"]
+                        user_items["weekly"]["weekly_night_count"] = 0
+        
+        elif mode == RefreshMode.SPECIFIC_GROUP:
+            # Refresh for groups in user config
+            if isinstance(gid, str):
+                self._morning[gid]["weekly"]["lastweek_night_count"] = self._morning[gid]["weekly"]["weekly_night_count"]
+                self._morning[gid]["weekly"]["weekly_night_count"] = 0
+               
         self._save_data()
         
-    def weekly_sleep_time_refresh(self) -> None:
+    def weekly_sleep_time_refresh(self, mode: RefreshMode, gid: Optional[str] = None) -> None:
         '''
             1. Refresh sleeping time & good-morning count of last week.
             2. Refresh the sleeping king UID of each groups.
             3. Reset weekly sleeping time & good-morning count.
         '''
         self._load_data()
+        self._load_config()
         
-        for gid in self._morning:
-            _max_sleep_time: List[int] = [0, 0, 0, 0]
-            _sleeping_king_uid: str = ""
-            
-            for uid, user_items in self._morning[gid].items():
-                # Remember to jump over the key "group_count"
-                if uid == "group_count": 
-                    continue
+        if mode == RefreshMode.DEFAULT_GROUPS:
+            # Refresh for groups in default config
+            for gid in self._morning:
+                if gid not in self._config:
+                    _max_sleep_time: List[int] = [0, 0, 0, 0]
+                    _sleeping_king_uid: str = ""
+                    
+                    for uid, user_items in self._morning[gid].items():
+                        # Remember to jump over the key "group_count"
+                        if uid == "group_count": 
+                            continue
+                        
+                        user_items["weekly"]["lastweek_morning_count"] = user_items["weekly"]["weekly_morning_count"]
+                        user_items["weekly"]["lastweek_sleep"] = user_items["weekly"]["weekly_sleep"]
+                        
+                        user_items["weekly"]["weekly_morning_count"] = 0
+                        user_items["weekly"]["weekly_sleep"] = [0, 0, 0, 0]
+                        
+                        # Compare sleeping times, day > hrs > mins > secs
+                        if user_items["weekly"]["lastweek_sleep"] > _max_sleep_time:
+                            _max_sleep_time = user_items["weekly"]["lastweek_sleep"]
+                            _sleeping_king_uid = uid
+                            
+                    self._morning[gid]["group_count"]["weekly"]["sleeping_king"] = _sleeping_king_uid
+        
+        elif mode == RefreshMode.SPECIFIC_GROUP:
+            # Refresh for groups in user config
+            if isinstance(gid, str):
+                _max_sleep_time: List[int] = [0, 0, 0, 0]
+                _sleeping_king_uid: str = ""
                 
+                user_items = self._morning[gid].items()
                 user_items["weekly"]["lastweek_morning_count"] = user_items["weekly"]["weekly_morning_count"]
                 user_items["weekly"]["lastweek_sleep"] = user_items["weekly"]["weekly_sleep"]
                 
@@ -203,9 +248,9 @@ class MorningManager:
                 if user_items["weekly"]["lastweek_sleep"] > _max_sleep_time:
                     _max_sleep_time = user_items["weekly"]["lastweek_sleep"]
                     _sleeping_king_uid = uid
+                        
+                self._morning[gid]["group_count"]["weekly"]["sleeping_king"] = _sleeping_king_uid
                     
-            self._morning[gid]["group_count"]["weekly"]["sleeping_king"] = _sleeping_king_uid
-                
         self._save_data()
         logger.info("每周睡眠时间、每周早安已刷新！")
 
@@ -224,7 +269,7 @@ class MorningManager:
                 msg = self._change_set_time(gid, "morning", _setting, early_time, late_time)
             
                 # Change the data of daily good-morning/night scheduler and weekly sleeping time scheduler
-                self.daily_scheduler(gid, early_time)
+                self.daily_scheduler(SchedulerMode.SPECIFIC_GROUP_AND_HOUR, gid, early_time)
                 self.weekly_sleep_time_scheduler(late_time)
         else:
             interval: int = args[0]
@@ -270,7 +315,7 @@ class MorningManager:
                     logger.info("每周睡眠时间定时刷新任务已启动！")
                 
                 if not scheduler.get_job(f"daily_scheduler_{gid}"):
-                    self.daily_scheduler(gid)
+                    self.daily_scheduler(SchedulerMode.SPECIFIC_GROUP, gid)
                     logger.info("每日早晚安定时刷新任务已启动！")
         
         return MessageSegment.text(msg)
@@ -647,106 +692,188 @@ class MorningManager:
         with open(self._config_path, "r", encoding="utf-8") as f:
             self._config = json.load(f)
             
-    def get_refresh_time(self, gid: str, _time: str, key: str) -> int:
+    def get_refresh_time(self, _time: str, key: str, / gid: Optional[str] = None) -> int:
         '''
             Get the time given the specific type(day or night) and key.
+            If group id is NOT in specific, return default config
         '''
         self._load_config()
-        _gid: str = "default" if gid not in self._config else gid
+        
+        if isinstance(gid, str) and gid not in self._config:
+            return -1
         
         if _time == "morning":
-            return self._config[_gid][_time]["morning_intime"][key] if self._config[_gid][_time]["morning_intime"]["enable"] else -1
+            if not isinstance(gid, str):
+                # Return the default config
+                return self._config["default"][_time]["morning_intime"][key]
+            
+            return self._config[gid][_time]["morning_intime"][key] if self._config[gid][_time]["morning_intime"]["enable"] else -1
 
         if _time == "night":
-            return self._config[_gid][_time]["night_intime"][key] if self._config[_gid][_time]["night_intime"]["enable"] else -1
+            if not isinstance(gid, str):
+                # Return the default config
+                return self._config["default"][_time]["night_intime"][key]
+            
+            return self._config[gid][_time]["night_intime"][key] if self._config[gid][_time]["night_intime"]["enable"] else -1
         
-    def daily_scheduler(self, _mode: SchedulerMode, / _gid: Optional[str] = None, _hours: Optional[int] = None) -> None:
+    def daily_scheduler(self, mode: SchedulerMode, _gid: Optional[str] = None, _hour: Optional[int] = None) -> None:
         '''
             Run schedulers for refreshing daily good-morning/night counts for ALL groups.
             Replace the existing schedulers.
         '''
-        self._load_data()
+        self._load_config()
         
-        # For a specific group, if hour is not specified, get it from config.json automatically
-        if isinstance(_gid, int):
-            if isinstance(_hours, int):
-                scheduler.add_job(
-                    func=self.group_daily_refresh,
-                    trigger="cron",
-                    args=[_gid],
-                    id=f"daily_scheduler_{_gid}",
-                    replace_existing=True,
-                    hour=_hours,
-                    minute=0,
-                    misfire_grace_time=60
-                )
-            else:
-                hours = self.get_refresh_time(_gid, "night", "early_time")
-                scheduler.add_job(
-                    func=self.group_daily_refresh,
-                    trigger="cron",
-                    args=[_gid],
-                    id=f"daily_scheduler_{_gid}",
-                    replace_existing=True,
-                    hour=hours,
-                    minute=0,
-                    misfire_grace_time=60
-                )
-        else:
-            # For ALL groups to initialize daily schedulers
-            for gid in self._morning:
-                hours = self.get_refresh_time(gid, "night", "early_time")
-            
-                if hours != -1:
+        if mode == SchedulerMode.ALL_GROUP:
+            # For DEFAULT groups to initialize daily schedulers
+            default_hour: int = self.get_refresh_time("night", "early_time")
+            scheduler.add_job(
+                func=self.group_daily_refresh,
+                trigger="cron",
+                args=[RefreshMode.DEFAULT_GROUPS],
+                id=f"daily_scheduler_default",
+                replace_existing=True,
+                hour=default_hour,
+                minute=0,
+                misfire_grace_time=60
+            )
+            # For OTHER specific groups to initialize daily schedulers
+            for gid in self._config:
+                if gid == "default":
+                    continue
+
+                hour: int = self.get_refresh_time("night", "early_time", gid)
+                if hour != -1:
                     scheduler.add_job(
                         func=self.group_daily_refresh,
                         trigger="cron",
-                        args=[gid],
+                        args=[RefreshMode.SPECIFIC_GROUP, gid],
                         id=f"daily_scheduler_{gid}",
                         replace_existing=True,
-                        hour=hours,
+                        hour=hour,
                         minute=0,
                         misfire_grace_time=60
                     )
+        # Specify the group id but not hour
+        elif mode == SchedulerMode.SPECIFIC_GROUP:
+            if isinstance(_gid, str):
+                hour = self.get_refresh_time("night", "early_time", _gid)
+                scheduler.add_job(
+                    func=self.group_daily_refresh,
+                    trigger="cron",
+                    args=[RefreshMode.SPECIFIC_GROUP, _gid],
+                    id=f"daily_scheduler_{_gid}",
+                    replace_existing=True,
+                    hour=hour,
+                    minute=0,
+                    misfire_grace_time=60
+                )
+        # Specify the group id and the hour
+        elif mode == SchedulerMode.SPECIFIC_GROUP_AND_HOUR:
+            if isinstance(_gid, str) and isinstance(_hour, int):
+                scheduler.add_job(
+                    func=self.group_daily_refresh,
+                    trigger="cron",
+                    args=[RefreshMode.SPECIFIC_GROUP, _gid],
+                    id=f"daily_scheduler_{_gid}",
+                    replace_existing=True,
+                    hour=_hour,
+                    minute=0,
+                    misfire_grace_time=60
+                )
+        else:
+            logger.warning(f"Mode {mode} for daily scheduler is illigal!")
     
-    def weekly_night_scheduler(self) -> None:
+    def weekly_night_scheduler(self, mode: SchedulerMode, _gid: Optional[str] = None) -> None:
         '''
-            Run the scheduler for refreshing the weekly good-night time. Replace the existinf scheduler.
+            Run the schedulers for refreshing the weekly good-night time. Replace the existing schedulers.
         '''
-        _hours = self.get_refresh_time("night", "late_time")
+        self._load_config()
         
-        if _hours != -1:
+        if mode == SchedulerMode.ALL_GROUP:
+            # For DEFAULT groups to initialize daily schedulers
+            default_hour: int = self.get_refresh_time("night", "late_time")
             scheduler.add_job(
                 func=self.weekly_night_refresh,
                 trigger="cron",
-                id="weekly_night_scheduler",
+                args=[RefreshMode.DEFAULT_GROUPS],
+                id=f"weekly_night_scheduler_default",
                 replace_existing=True,
-                hour=_hours,
+                hour=default_hour,
                 minute=0,
-                day_of_week="0",    # From Monday to Sunday: 0~6 
+                day_of_week="0",    # From Monday to Sunday: 0~6
                 misfire_grace_time=60
             )
+            # For OTHER specific groups to initialize daily schedulers
+            for gid in self._config:
+                if gid == "default":
+                    continue
 
-    def weekly_sleep_time_scheduler(self, hours: Optional[int] = None) -> None:
-        '''
-            Run the scheduler for refreshing the weekly sleeping time. Replace the existing scheduler.
-        '''
-        if isinstance(hours, int):
-            _hours = hours
-        else:
-            _hours = self.get_refresh_time("morning", "late_time")
+                hour: int = self.get_refresh_time("night", "late_time", gid)
+                if hour != -1:
+                    scheduler.add_job(
+                        func=self.weekly_night_refresh,
+                        trigger="cron",
+                        args=[RefreshMode.SPECIFIC_GROUP, gid],
+                        id=f"weekly_night_scheduler_{gid}",
+                        replace_existing=True,
+                        hour=hour,
+                        minute=0,
+                        day_of_week="0",    # From Monday to Sunday: 0~6
+                        misfire_grace_time=60
+                    )
         
-        if _hours != -1:
+        # Specify the group id but not hour
+        elif mode == SchedulerMode.SPECIFIC_GROUP:
+            if isinstance(_gid, str):
+                hour: int = self.get_refresh_time("night", "late_time", _gid)
+                scheduler.add_job(
+                    func=self.weekly_night_refresh,
+                    trigger="cron",
+                    args=[RefreshMode.SPECIFIC_GROUP, _gid],
+                    id=f"weekly_night_scheduler_{_gid}",
+                    replace_existing=True,
+                    hour=hour,
+                    minute=0,
+                    day_of_week="0",    # From Monday to Sunday: 0~6
+                    misfire_grace_time=60
+                )
+                
+    def weekly_sleep_time_scheduler(self, mode: SchedulerMode, hour: Optional[int] = None) -> None:
+        '''
+            Run the schedulers for refreshing the weekly sleeping time. Replace the existing schedulers.
+        '''
+        if mode == SchedulerMode.ALL_GROUP:
+            # For DEFAULT groups to initialize daily schedulers
+            default_hour: int = self.get_refresh_time("morning", "late_time")
             scheduler.add_job(
                 func=self.weekly_sleep_time_refresh,
                 trigger="cron",
-                id="weekly_sleep_time_scheduler",
+                args=[RefreshMode.DEFAULT_GROUPS],
+                id=f"weekly_sleep_time_scheduler_default",
                 replace_existing=True,
-                hour=_hours,
+                hour=default_hour,
                 minute=0,
-                day_of_week="0",    # From Monday to Sunday: 0~6 
+                day_of_week="0",    # From Monday to Sunday: 0~6
                 misfire_grace_time=60
             )
+            # For OTHER specific groups to initialize daily schedulers
+            for gid in self._config:
+                if gid == "default":
+                    continue
+
+                hour: int = self.get_refresh_time("morning", "late_time", gid)
+                if hour != -1:
+                    scheduler.add_job(
+                        func=self.weekly_sleep_time_refresh,
+                        trigger="cron",
+                        args=[RefreshMode.SPECIFIC_GROUP, gid],
+                        id=f"weekly_sleep_time_scheduler_{gid}",
+                        replace_existing=True,
+                        hour=hour,
+                        minute=0,
+                        day_of_week="0",    # From Monday to Sunday: 0~6
+                        misfire_grace_time=60
+                    )
 
 morning_manager = MorningManager()
 
