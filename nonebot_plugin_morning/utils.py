@@ -3,6 +3,35 @@ from typing import Union, Tuple, List, Dict
 import json
 from enum import Enum
 
+mor_switcher: Dict[str, str] = {
+    "时限": "morning_intime",
+    "多重起床": "multi_get_up",
+    "超级亢奋": "super_get_up"
+}
+
+nig_switcher: Dict[str, str] = {
+    "时限": "night_intime",
+    "优质睡眠": "good_sleep",
+    "深度睡眠": "deep_sleep"
+}
+
+morning_prompt: List[str] = [
+    "早安！",
+    "おはよう！",
+    "早安～",
+    "哦哈哟！"
+]
+
+the_latest_night_prompt: List[str] = [
+    "是加班到这么晚吗？",
+    "睡这么晚不怕猝死吗？",
+    "想什么呢睡不着？是在想我吗？"
+]
+
+the_earliest_morning_prompt: List[str] = [
+    "懒狗怎么起这么早？"
+]
+
 class SchedulerMode(Enum):
     ALL_GROUP = 0
     SPECIFIC_GROUP = 1

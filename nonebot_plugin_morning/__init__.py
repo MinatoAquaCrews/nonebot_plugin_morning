@@ -8,6 +8,9 @@ from nonebot_plugin_morning.utils import SchedulerMode
 from .config import driver
 from .data_source import morning_manager
 
+require("nonebot_plugin_apscheduler")
+from nonebot_plugin_apscheduler import scheduler
+
 __morning_version__ = "v0.3.2a1"
 __morning_notes__ = f'''
 おはよう！ {__morning_version__}
@@ -22,14 +25,15 @@ __morning_notes__ = f'''
 [晚安开启/关闭 xx] 开启/关闭晚安的某个配置
 [晚安设置 xx x] 设置晚安配置的数值'''.strip()
 
+# Good morning/night
 morning = on_command(cmd="早安", aliases={"哦哈哟", "おはよう"}, permission=GROUP, priority=12)
 night = on_command(cmd="晚安", aliases={"哦呀斯密", "おやすみ"}, permission=GROUP, priority=12)
 
-# routine
+# Routine
 my_routine = on_command(cmd="我的作息", permission=GROUP, priority=12)
 group_routine = on_command(cmd="群友作息", permission=GROUP, priority=12)
 
-# setting
+# Settings
 configure = on_command(cmd="早安设置", aliases={"晚安设置", "早晚安设置"}, permission=GROUP, priority=11, block=True)
 morning_setting = on_regex(pattern=r"^早安(开启|关闭|设置)( (时限|多重起床|超级亢奋)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
 night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)( (时限|优质睡眠|深度睡眠)(( \d{1,2}){1,2})?)?$", permission=SUPERUSER | GROUP_OWNER | GROUP_ADMIN, priority=10, block=True)
@@ -222,18 +226,18 @@ async def handle_skip(matcher: Matcher):
     prompt="请输入设置参数，时限配置项请输入允许的最早/晚的睡觉时间（空格间隔），其余配置项请输入一个时间，输入取消以取消操作",
     parameterless=[Depends(parse_params())]
 )
-async def _(matcher: Matcher):
+async def _(event: GroupMessageEvent, matcher: Matcher):
     _op_type: str = matcher.get_arg("op_type", None)
     _item: str = matcher.get_arg("item", None)
     _param1: str = matcher.get_arg("param1", 0)
     _param2: str = matcher.get_arg("param2", 0)
     
     if _op_type == "设置":
-        msg = morning_manager.morning_config(_item, int(_param1), int(_param2))
+        msg = morning_manager.morning_config(_item, str(event.group_id), int(_param1), int(_param2))
     elif _op_type == "开启":
-        msg = morning_manager.morning_switch(_item, True)
+        msg = morning_manager.morning_switch(_item, True, str(event.group_id))
     elif _op_type == "关闭":
-        msg = morning_manager.morning_switch(_item, False)
+        msg = morning_manager.morning_switch(_item, False, str(event.group_id))
         
     await morning_setting.finish(msg)
     
@@ -298,18 +302,18 @@ async def handle_skip(matcher: Matcher):
     prompt="请输入设置参数，时限配置项请输入允许的最早/晚的睡觉时间（空格间隔），其余配置项请输入一个时间，输入取消以取消操作",
     parameterless=[Depends(parse_params())]
 )
-async def _(matcher: Matcher):
+async def _(event: GroupMessageEvent, matcher: Matcher):
     _op_type: str = matcher.get_arg("op_type", None)
     _item: str = matcher.get_arg("item", None)
     _param1: str = matcher.get_arg("param1", 0)
     _param2: str = matcher.get_arg("param2", 0)
     
     if _op_type == "设置":
-        msg = morning_manager.night_config(_item, int(_param1), int(_param2))
+        msg = morning_manager.night_config(_item, str(event.group_id), int(_param1), int(_param2))
     elif _op_type == "开启":
-        msg = morning_manager.night_switch(_item, True)
+        msg = morning_manager.night_switch(_item, True, str(event.group_id))
     elif _op_type == "关闭":
-        msg = morning_manager.night_switch(_item, False)
+        msg = morning_manager.night_switch(_item, False, str(event.group_id))
     
     await night_setting.finish(msg)
 
@@ -330,3 +334,8 @@ async def monday_weekly_night_refresh():
 async def weekly_refresh():
     morning_manager.weekly_sleep_time_scheduler(SchedulerMode.ALL_GROUP)
     logger.info("每周睡眠时间定时刷新任务已启动！")
+
+# 每日零时自动检测各群组设置是否与默认配置一致，一致则移除群组键值，并入默认配置
+@scheduler.scheduled_job(trigger="cron", hour=0, minute=0, misfire_grace_time=60)
+async def trim():
+    morning_manager.auto_config_trim()
