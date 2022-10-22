@@ -1,5 +1,7 @@
-from typing import Coroutine, Any, List
-from nonebot import logger, require, on_command, on_regex
+from typing import List
+from nonebot.log import logger
+from nonebot.plugin import PluginMetadata
+from nonebot import require, on_command, on_regex
 from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, MessageSegment, GroupMessageEvent
@@ -12,8 +14,7 @@ require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
 __morning_version__ = "v0.3.2a1"
-__morning_notes__ = f'''
-おはよう！ {__morning_version__}
+__morning_usage__ = f'''
 [早安] 早安/哦哈哟/おはよう
 [晚安] 晚安/哦呀斯密/おやすみ
 [我的作息] 看看自己的作息
@@ -24,6 +25,16 @@ __morning_notes__ = f'''
 [早安设置 xx x] 设置早安配置的数值
 [晚安开启/关闭 xx] 开启/关闭晚安的某个配置
 [晚安设置 xx x] 设置晚安配置的数值'''.strip()
+
+__plugin_meta__ = PluginMetadata(
+    name="おはよう！",
+    description="早晚安！养成良好生活作息！",
+    usage=__morning_usage__,
+    extra={
+        "author": "KafCoppelia <k740677208@gmail.com>",
+        "version": __morning_version__
+    }
+)
 
 # Good morning/night
 morning = on_command(cmd="早安", aliases={"哦哈哟", "おはよう"}, permission=GROUP, priority=12)
@@ -40,9 +51,9 @@ night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)( (时限|优质
 
 @morning.handle()
 async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text()
-    if args == "帮助":
-        await matcher.finish(__morning_notes__)
+    arg: str = args.extract_plain_text()
+    if arg == "帮助":
+        await matcher.finish(__morning_usage__)
             
     uid = event.user_id
     gid = event.group_id
@@ -61,9 +72,9 @@ async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, arg
 
 @night.handle()
 async def good_night(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = args.extract_plain_text()
-    if args == "帮助":
-        await matcher.finish(__morning_notes__)
+    arg: str = args.extract_plain_text()
+    if arg == "帮助":
+        await matcher.finish(__morning_usage__)
             
     uid: int = event.user_id
     gid: int = event.group_id
@@ -106,7 +117,7 @@ async def _(matcher: Matcher):
     msg = morning_manager.get_current_config()
     await matcher.finish(msg)
 
-def parse_item(_key: str) -> Coroutine[Any, Any, None]:
+def parse_item(_key: str):
     '''
         Parser setting item
     '''
@@ -116,7 +127,7 @@ def parse_item(_key: str) -> Coroutine[Any, Any, None]:
         
         if arg == "时限" or arg == "多重起床" or arg == "超级亢奋" or \
             arg == "优质睡眠" or arg == "深度睡眠":
-            matcher.set_arg("item", arg)
+            matcher.set_arg("item", Message(arg))
         else:
             if _key == "morning":
                 await matcher.reject_arg("item", "输入配置不合法，可选时限/多重起床/超级亢奋")
@@ -125,7 +136,7 @@ def parse_item(_key: str) -> Coroutine[Any, Any, None]:
     
     return _item_parser
 
-def parse_params() -> Coroutine[Any, Any, None]:
+def parse_params():
     '''
         Parser extra params
     '''
@@ -150,8 +161,7 @@ def parse_params() -> Coroutine[Any, Any, None]:
             except ValueError:
                 await matcher.reject_arg("param1", "输入参数必须是纯数字")
                 
-            matcher.set_arg("param1", args[0])
-            matcher.set_arg("param2", 0)
+            matcher.set_arg("param1", Message(args[0]))
         else:
             if len(args) == 1:
                 await matcher.reject_arg("param1", "缺少输入参数")
@@ -162,8 +172,8 @@ def parse_params() -> Coroutine[Any, Any, None]:
                 except ValueError:
                     await matcher.send("输入参数必须是纯数字，请重新输入")
                 
-                matcher.set_arg("param1", args[0])
-                matcher.set_arg("param2", args[1])
+                matcher.set_arg("param1", Message(args[0]))
+                matcher.set_arg("param2", Message(args[1]))
 
     return _params_parser
 
@@ -173,16 +183,13 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
     arg_len: int = len(args)
     
     if args[0][-2:] == "开启" or args[0][-2:] == "关闭" or args[0][-2:] == "设置":
-        matcher.set_arg("op_type", args[0][-2:])
-        if args[0][-2:] == "开启" or args[0][-2:] == "关闭":
-            matcher.set_arg("param1", 0)   # Ignore state["param1"] and state["param2"]
-            matcher.set_arg("param2", 0)
+        matcher.set_arg("op_type", Message(args[0][-2:]))
     else:
         await matcher.finish("输入指令不合法，可选：开启/关闭/设置")
     
     if arg_len > 1:
         if args[1] == "时限" or args[1] == "多重起床" or args[1] == "超级亢奋":
-            matcher.set_arg("item", args[1])
+            matcher.set_arg("item", Message(args[1]))
         else:
             await matcher.finish("输入配置不合法，可选：时限/多重起床/超级亢奋")
     
@@ -194,8 +201,7 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
             except ValueError:
                 await matcher.send("输入参数必须是纯数字，请重新输入")
 
-            matcher.set_arg("param1", args[2])
-            matcher.set_arg("param2", 0)
+            matcher.set_arg("param1", Message(args[2]))
             if arg_len > 3:
                 await matcher.send("输入参数过多，仅取第一个参数")
         else:
@@ -210,15 +216,15 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
                 except ValueError:
                     await matcher.send("输入参数必须是纯数字，请重新输入")
                 
-                matcher.set_arg("param1", args[2])
-                matcher.set_arg("param2", args[3])
+                matcher.set_arg("param1", Message(args[2]))
+                matcher.set_arg("param2", Message(args[3]))
 
 @morning_setting.got(
     "item",
     prompt="请选择配置项，可选：时限/多重起床/超级亢奋，输入取消以取消操作",
     parameterless=[Depends(parse_item("morning"))]
 )
-async def handle_skip(matcher: Matcher):
+async def _(matcher: Matcher):
     matcher.skip()
 
 @morning_setting.got(
@@ -227,16 +233,33 @@ async def handle_skip(matcher: Matcher):
     parameterless=[Depends(parse_params())]
 )
 async def _(event: GroupMessageEvent, matcher: Matcher):
-    _op_type: str = matcher.get_arg("op_type", None)
-    _item: str = matcher.get_arg("item", None)
-    _param1: str = matcher.get_arg("param1", 0)
-    _param2: str = matcher.get_arg("param2", 0)
+    __op_type = matcher.get_arg("op_type", None)
+    _op_type: str = ""
+    if __op_type:
+        _op_type = __op_type.extract_plain_text()
+    
+    __item = matcher.get_arg("item", None)
+    _item: str = ""
+    if __item:
+        _item = __item.extract_plain_text()
+    
+    __param1 = matcher.get_arg("param1", None)
+    if __param1:
+        _param1 = int(__param1.extract_plain_text())
+    else:
+        _param1 = 0
+    
+    __param2 = matcher.get_arg("param2", None)
+    if __param2:
+        _param2 = int(__param2.extract_plain_text())
+    else:
+        _param2 = 0
     
     if _op_type == "设置":
-        msg = morning_manager.morning_config(_item, str(event.group_id), int(_param1), int(_param2))
+        msg = morning_manager.morning_config(_item, str(event.group_id), _param1, _param2)
     elif _op_type == "开启":
         msg = morning_manager.morning_switch(_item, True, str(event.group_id))
-    elif _op_type == "关闭":
+    else:
         msg = morning_manager.morning_switch(_item, False, str(event.group_id))
         
     await morning_setting.finish(msg)
@@ -249,19 +272,16 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
     logger.info(f"check in handle: {args}")
 
     if args[0][-2:] == "开启" or args[0][-2:] == "关闭" or args[0][-2:] == "设置":
-        matcher.set_arg("op_type", args[0][-2:])
-        if args[0][-2:] == "开启" or args[0][-2:] == "关闭":
-            matcher.set_arg("param1", 0)   # Ignore state["param1"] and state["param2"]
-            matcher.set_arg("param2", 0)
+        matcher.set_arg("op_type", Message(args[0][-2:]))
     else:
         await matcher.finish("输入指令不合法，可选：开启/关闭/设置")
     
     if arg_len > 1:
         if args[1] == "时限" or args[1] == "优质睡眠" or args[1] == "深度睡眠":
-            matcher.set_arg("item", args[1])
+            matcher.set_arg("item", Message(args[1]))
         else:
             await matcher.finish("输入配置不合法，可选：时限/优质睡眠/深度睡眠")
-            
+    
     # Params are numbers, but store in state in string
     if arg_len > 2:
         if args[1] != "时限":
@@ -270,8 +290,7 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
             except ValueError:
                 await matcher.send("输入参数必须是纯数字，请重新输入")
 
-            matcher.set_arg("param1", args[2])
-            matcher.set_arg("param2", 0)
+            matcher.set_arg("param1", Message(args[2]))
             if arg_len > 3:
                 await matcher.send("输入参数过多，仅取第一个参数")
         else:
@@ -286,15 +305,15 @@ async def _(matcher: Matcher, matched: str = RegexMatched()):
                 except ValueError:
                     await matcher.send("输入参数必须是纯数字，请重新输入")
                 
-                matcher.set_arg("param1", args[2])
-                matcher.set_arg("param2", args[3])
+                matcher.set_arg("param1", Message(args[2]))
+                matcher.set_arg("param2", Message(args[3]))
                 
 @night_setting.got(
     "item",
     prompt="请选择配置项，可选：时限/优质睡眠/深度睡眠，输入取消以取消操作",
     parameterless=[Depends(parse_item("night"))]
 )
-async def handle_skip(matcher: Matcher):
+async def _(matcher: Matcher):
     matcher.skip()
 
 @night_setting.got(
@@ -303,16 +322,33 @@ async def handle_skip(matcher: Matcher):
     parameterless=[Depends(parse_params())]
 )
 async def _(event: GroupMessageEvent, matcher: Matcher):
-    _op_type: str = matcher.get_arg("op_type", None)
-    _item: str = matcher.get_arg("item", None)
-    _param1: str = matcher.get_arg("param1", 0)
-    _param2: str = matcher.get_arg("param2", 0)
+    __op_type = matcher.get_arg("op_type", None)
+    _op_type: str = ""
+    if __op_type:
+        _op_type = __op_type.extract_plain_text()
+    
+    __item = matcher.get_arg("item", None)
+    _item: str = ""
+    if __item:
+        _item = __item.extract_plain_text()
+    
+    __param1 = matcher.get_arg("param1", None)
+    if __param1:
+        _param1 = int(__param1.extract_plain_text())
+    else:
+        _param1 = 0
+    
+    __param2 = matcher.get_arg("param2", None)
+    if __param2:
+        _param2 = int(__param2.extract_plain_text())
+    else:
+        _param2 = 0
     
     if _op_type == "设置":
-        msg = morning_manager.night_config(_item, str(event.group_id), int(_param1), int(_param2))
+        msg = morning_manager.night_config(_item, str(event.group_id), _param1, _param2)
     elif _op_type == "开启":
         msg = morning_manager.night_switch(_item, True, str(event.group_id))
-    elif _op_type == "关闭":
+    else:
         msg = morning_manager.night_switch(_item, False, str(event.group_id))
     
     await night_setting.finish(msg)

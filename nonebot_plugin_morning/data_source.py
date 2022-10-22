@@ -1,4 +1,5 @@
-from nonebot import require, logger
+from nonebot import require
+from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment
 from calendar import MONDAY
 from typing import Union, List, Dict, Optional, Tuple
@@ -163,7 +164,7 @@ class MorningManager:
             
         return msg
 
-    def morning_config(self, _setting: str, gid: Optional[str] = None, *args: List[int]) -> MessageSegment:
+    def morning_config(self, _setting: str, gid: Optional[str] = None, *args) -> MessageSegment:
         '''
             Configurations about morning. The param _setting is a legal item.
         '''
@@ -198,14 +199,14 @@ class MorningManager:
         '''
             Enable/Disable of morning settings.
         '''
-        _setting: str = mor_switcher[_setting]
+        setting: str = mor_switcher[_setting]
         
         if isinstance(gid, str):
             # Already created the specific config for the group here
-            msg: str = self._change_enable("morning", _setting, new_state, gid)
+            msg: str = self._change_enable("morning", setting, new_state, gid)
             
             # Change the status of weekly sleep time scheduler
-            if _setting == "morning_intime":
+            if setting == "morning_intime":
                 # Remove the scheduler if new state is False
                 if not new_state:
                     if scheduler.get_job(f"weekly_sleep_time_scheduler_{gid}"):
@@ -223,14 +224,14 @@ class MorningManager:
                 
         return MessageSegment.text(msg)
 
-    def night_config(self, _setting: str, gid: Optional[str] = None, *args: List[int]) -> MessageSegment:
+    def night_config(self, _setting: str, gid: Optional[str] = None, *args) -> MessageSegment:
         '''
             Configurations about night. The param _setting is a legal item.
         '''
-        _setting: str = nig_switcher[_setting]
+        setting: str = nig_switcher[_setting]
         msg: str = ""
         
-        if _setting == "night_intime":
+        if setting == "night_intime":
             early_time: int = args[0]
             late_time: int = args[1]
             
@@ -239,7 +240,7 @@ class MorningManager:
             else:
                 if isinstance(gid, str):
                     # Create a specific config for the group
-                    msg = self._change_set_time(gid, "night", _setting, early_time, late_time)
+                    msg = self._change_set_time(gid, "night", setting, early_time, late_time)
                     
                     # The earliest time of good night is changed. Change the daily scheduler.
                     self.daily_scheduler(SchedulerMode.SPECIFIC_GROUP_AND_HOUR, gid, early_time)
@@ -252,7 +253,7 @@ class MorningManager:
                 msg = "错误！您设置的时间间隔未在0-24之间"
             else:
                 if isinstance(gid, str):
-                    msg = self._change_set_time(gid, "night", _setting, interval, None)
+                    msg = self._change_set_time(gid, "night", setting, interval, None)
         
         return MessageSegment.text(msg)
 
@@ -260,14 +261,14 @@ class MorningManager:
         '''
             Enable/Disable of night settings.
         '''
-        _setting: str = nig_switcher[_setting]
+        setting: str = nig_switcher[_setting]
         
         if isinstance(gid, str):
             # Already created the specific config for the group here
-            msg: str = self._change_enable("night", _setting, new_state, gid)
+            msg: str = self._change_enable("night", setting, new_state, gid)
             
             # Change the status of daily scheduler
-            if _setting == "night_intime":
+            if setting == "night_intime":
                 # Remove the scheduler if new state is False
                 if not new_state:
                     if scheduler.get_job(f"daily_scheduler_{gid}"):
@@ -975,7 +976,3 @@ class MorningManager:
             logger.warning(f"Mode: {mode} for weekly sleep time scheduler is illigal!")
 
 morning_manager = MorningManager()
-
-__all__ = [
-    morning_manager
-]

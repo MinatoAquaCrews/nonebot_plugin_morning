@@ -1,4 +1,5 @@
-from nonebot import get_driver, logger
+from nonebot import get_driver
+from nonebot.log import logger
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from typing import Dict, Union
