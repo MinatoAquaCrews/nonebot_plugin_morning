@@ -29,7 +29,8 @@ the_latest_night_prompt: List[str] = [
 ]
 
 the_earliest_morning_prompt: List[str] = [
-    "懒狗怎么起这么早？"
+    "懒狗怎么起这么早？",
+    "早起的鸟儿有虫吃！"
 ]
 
 class SchedulerMode(Enum):
