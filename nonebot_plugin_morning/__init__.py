@@ -113,8 +113,9 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     await matcher.finish(MessageSegment.text(msg))
 
 @configure.handle()
-async def _(matcher: Matcher):
-    msg = morning_manager.get_current_config()
+async def _(matcher: Matcher, event: GroupMessageEvent):
+    gid = str(event.group_id)
+    msg = morning_manager.get_group_config(gid)
     await matcher.finish(msg)
 
 def parse_item(_key: str):

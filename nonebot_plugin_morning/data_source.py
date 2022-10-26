@@ -60,55 +60,66 @@ class MorningManager:
         
         self._save_config()
         
-    def get_current_config(self) -> MessageSegment:
+    def get_group_config(self, gid: str) -> MessageSegment:
         '''
             Return the current configurations.
         '''
         msg: str = "早安晚安设置如下："
         self._load_config()
         
-        # Morning config
-        morning_intime: bool = self._config["morning"]["morning_intime"]["enable"]
-        if morning_intime:
-            msg += "\n是否要求规定时间内起床：是\n - 最早允许起床时间：" + str(self._config["morning"]['morning_intime']["early_time"]) + "点\n - 最晚允许起床时间：" + str(self._config["morning"]["morning_intime"]["late_time"]) + "点"
+        if gid not in self._config:
+            _group_config = self._config["default"]
         else:
-            msg += "\n是否要求规定时间内起床：否"
-            
-        multi_get_up: bool = self._config["morning"]["multi_get_up"]["enable"]
-        if multi_get_up:
-            msg += "\n是否允许连续多次起床：是"
-        else:
-            msg += "\n是否允许连续多次起床：否\n - 允许的最短起床间隔：" + str(self._config["morning"]["multi_get_up"]["interval"]) + "小时"
+            _group_config = self._config[gid]
         
-        super_get_up: bool = self._config["morning"]["super_get_up"]["enable"]
-        if super_get_up:
-            msg += "\n是否允许超级亢奋(即睡眠时长很短)：是"
+        # Morning config
+        msg += "\n是否要求规定时间内起床："
+        morning_intime = _group_config["morning"]["morning_intime"]["enable"]
+        if morning_intime:
+            msg += "是\n - 最早允许起床时间：" + str(_group_config["morning"]['morning_intime']["early_time"]) + "点\n - 最晚允许起床时间：" + str(_group_config["morning"]["morning_intime"]["late_time"]) + "点"
         else:
-            msg += "\n是否允许超级亢奋(即睡眠时长很短)：否\n - 允许的最短睡觉时长：" + str(self._config["morning"]["super_get_up"]["interval"]) + "小时"
+            msg += "否"
+        
+        msg += "\n是否允许连续多次起床："
+        multi_get_up = _group_config["morning"]["multi_get_up"]["enable"]
+        if multi_get_up:
+            msg += "是"
+        else:
+            msg += "否\n - 允许的最短起床间隔：" + str(_group_config["morning"]["multi_get_up"]["interval"]) + "小时"
+        
+        msg += "\n是否允许超级亢奋（即睡眠时长很短）："
+        super_get_up= _group_config["morning"]["super_get_up"]["enable"]
+        if super_get_up:
+            msg += "是"
+        else:
+            msg += "否\n - 允许的最短睡觉时长：" + str(_group_config["morning"]["super_get_up"]["interval"]) + "小时"
         
         # Night config
-        night_intime: bool = self._config["night"]["night_intime"]["enable"]
+        msg += "\n是否要求规定时间内睡觉："
+        night_intime = _group_config["night"]["night_intime"]["enable"]
         if night_intime:
-            msg += "\n是否要求规定时间内睡觉：是\n - 最早允许睡觉时间：" + str(self._config["night"]["night_intime"]["early_time"]) + \
-                "点\n - 最晚允许睡觉时间：第二天早上" + str(self._config["night"]["night_intime"]["late_time"]) + "点"
+            msg += "是\n - 最早允许睡觉时间：" + str(_group_config["night"]["night_intime"]["early_time"]) + \
+                "点\n - 最晚允许睡觉时间：第二天早上" + str(_group_config["night"]["night_intime"]["late_time"]) + "点"
         else:
-            msg += "\n是否要求规定时间内睡觉：否"
+            msg += "否"
         
-        good_sleep: bool = self._config["night"]["good_sleep"]["enable"]
+        msg += "\n是否开启优质睡眠："
+        good_sleep = _group_config["night"]["good_sleep"]["enable"]
         if good_sleep:
-            msg += "\n是否开启优质睡眠：是"
+            msg += "是"
         else:
-            msg += "\n是否开启优质睡眠：否\n - 允许的最短优质睡眠：" + str(self._config["night"]["good_sleep"]["interval"]) + "小时"
+            msg += "否\n - 允许的最短优质睡眠：" + str(_group_config["night"]["good_sleep"]["interval"]) + "小时"
         
-        deep_sleep: bool = self._config["night"]["deep_sleep"]["enable"]
+        msg += "\n是否允许深度睡眠（即清醒时长很短）："
+        deep_sleep = _group_config["night"]["deep_sleep"]["enable"]
         if deep_sleep:
-            msg += "\n是否允许深度睡眠(即清醒时长很短)：是"
+            msg += "是"
         else:
-            msg += "\n是否允许深度睡眠(即清醒时长很短)：否\n - 允许的最短清醒时长：" + str(self._config["night"]["deep_sleep"]["interval"]) + "小时"
+            msg += "否\n - 允许的最短清醒时长：" + str(_group_config["night"]["deep_sleep"]["interval"]) + "小时"
         
         return MessageSegment.text(msg)
     
-    def _change_enable(self, _time: str, _setting: str, new_state: bool, gid: Optional[str] = None) -> str:
+    def _change_enable(self, _time: str, _setting: str, new_state: bool, gid: str) -> str:
         '''
             Change and save the new state of a setting. If group id doesn't exists, create the default first.
         '''
@@ -660,25 +671,23 @@ class MorningManager:
             return self._config[gid][_time][f"{_time}_intime"][key] if self._config[gid][_time][f"{_time}_intime"]["enable"] else -1
     
     # ------------------------------ Refresh Jobs ------------------------------ #    
-    def group_daily_refresh(self, _mode: RefreshMode, gid: Optional[str] = None) -> None:
+    def group_daily_refresh(self, gid: Optional[str] = None) -> None:
         '''
             Reset good-morning/night count of groups of yesterday at the earliest time of daily good-night.
         '''
         self._load_data()
         self._load_config()
         
-        if _mode == RefreshMode.DEFAULT_GROUPS:
+        if isinstance(gid, str):
+            # Refresh for groups in user config
+            self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
+            self._morning[gid]["group_count"]["daily"]["good_night"] = 0
+        else:
             # Refresh for groups in default but not in specific config
             for gid in self._morning:
                 if gid not in self._config:
                     self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
                     self._morning[gid]["group_count"]["daily"]["good_night"] = 0
-        
-        elif _mode == RefreshMode.SPECIFIC_GROUP:
-            # Refresh for groups in user config
-            if isinstance(gid, str):
-                self._morning[gid]["group_count"]["daily"]["good_morning"] = 0
-                self._morning[gid]["group_count"]["daily"]["good_night"] = 0
         
         self._save_data()
         
@@ -765,6 +774,40 @@ class MorningManager:
                 self._morning[gid]["group_count"]["weekly"]["sleeping_king"] = _sleeping_king_uid
                     
         self._save_data()
+        
+    def startup_daily_scheduler(self):
+        # For DEFAULT groups to initialize daily schedulers
+        hour: int = self.get_refresh_time("night", "early_time")
+        scheduler.add_job(
+            func=self.group_daily_refresh,
+            trigger="cron",
+            args=[None],
+            id=f"daily_scheduler_default",
+            replace_existing=True,
+            hour=hour,
+            minute=0,
+            misfire_grace_time=60
+        )
+        # For OTHER specific groups to initialize daily schedulers
+        for gid in self._config:
+            if gid == "default":
+                continue
+
+            hour: int = self.get_refresh_time("night", "early_time", gid)
+            if hour != -1:
+                scheduler.add_job(
+                    func=self.group_daily_refresh,
+                    trigger="cron",
+                    args=[gid],
+                    id=f"daily_scheduler_{gid}",
+                    replace_existing=True,
+                    hour=hour,
+                    minute=0,
+                    misfire_grace_time=60
+                )
+
+    def add_daily_scheduler(self):
+        pass
             
     def daily_scheduler(self, mode: SchedulerMode, _gid: Optional[str] = None, _hour: Optional[int] = None) -> None:
         '''
