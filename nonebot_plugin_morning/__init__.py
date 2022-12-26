@@ -1,16 +1,13 @@
 from typing import List
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
-from nonebot import require, on_command, on_regex
+from nonebot import on_command, on_regex
 from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, MessageSegment, GroupMessageEvent
 from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
 from .config import driver
 from .data_source import morning_manager
-
-require("nonebot_plugin_apscheduler")
-from nonebot_plugin_apscheduler import scheduler
 
 __morning_version__ = "v0.3.2a1"
 __morning_usages__ = f'''
@@ -359,11 +356,11 @@ async def daily_refresh():
     morning_manager.daily_scheduler()
     logger.info("每日早晚安定时刷新任务已启动！")
 
-# 每周一零点统计部分周数据
-@scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="0", misfire_grace_time=60)
-async def monday_refresh():
-    morning_manager.weekly_night_refresh()
-    logger.info("每周晚安已刷新！")
+# 每周一最晚晚安时间统计部分周数据
+@driver.on_startup
+async def monday_weekly_night_refresh():
+    morning_manager.weekly_night_scheduler()
+    logger.info("每周晚安定时刷新任务已启动！")
 
 # 每周一最晚早安时间，统计上周睡眠时间、早安并重置
 @driver.on_startup

@@ -661,44 +661,64 @@ class MorningManager:
         self._save_data()
         logger.info("每周睡眠时间、每周早安已刷新！")
 
-    def daily_scheduler(self, hours: Optional[int] = None) -> None:
+    def daily_scheduler(self, oclock: Optional[int] = None) -> None:
         '''
             Run the scheduler for refreshing daily good-morning/night counts. Replace the existing scheduler.
         '''
-        if isinstance(hours, int):
-            _hours = hours
+        if isinstance(oclock, int):
+            _oclock = oclock
         else:
-            _hours = self.get_refresh_time("night", "early_time")
+            _oclock = self.get_refresh_time("night", "early_time")
         
-        if _hours != -1:
+        if _oclock != -1:
             scheduler.add_job(
-                self.daily_refresh,
+                self.group_daily_refresh,
                 "cron",
                 id="daily_scheduler",
                 replace_existing=True,
-                hour=_hours,
+                hour=_oclock,
                 minute=0,
                 misfire_grace_time=60
             )
     
-    def weekly_sleep_time_scheduler(self, hours: Optional[int] = None) -> None:
+    def weekly_night_scheduler(self) -> None:
+        '''
+            Run the schedulers for refreshing the weekly good-night time. Replace the existing schedulers.
+        '''
+        oclock: int = self.get_refresh_time("night", "late_time")
+        _night_early_oclock: int = self.get_refresh_time("night", "early_time")
+        
+        if oclock != -1:
+            day_of_week: str = "0" if oclock < _night_early_oclock else "6"    # From Monday to Sunday: 0~6
+            scheduler.add_job(
+                func=self.weekly_night_refresh,
+                trigger="cron",
+                id=f"weekly_night_scheduler_default",
+                replace_existing=True,
+                hour=oclock,
+                minute=0,
+                day_of_week=day_of_week,
+                misfire_grace_time=60
+            )
+    
+    def weekly_sleep_time_scheduler(self, oclock: Optional[int] = None) -> None:
         '''
             Run the scheduler for refreshing the weekly sleeping time. Replace the existing scheduler.
         '''
-        if isinstance(hours, int):
-            _hours = hours
+        if isinstance(oclock, int):
+            _oclock = oclock
         else:
-            _hours = self.get_refresh_time("morning", "late_time")
+            _oclock = self.get_refresh_time("morning", "late_time")
         
-        if _hours != -1:
+        if _oclock != -1:
             scheduler.add_job(
                 self.weekly_sleep_time_refresh,
                 "cron",
                 id="weekly_sleep_time_scheduler",
                 replace_existing=True,
-                hour=_hours,
+                hour=_oclock,
                 minute=0,
-                day_of_week="0",    # From Monday to Sunday: 0~6 
+                day_of_week="0",
                 misfire_grace_time=60
             )
 
