@@ -1,34 +1,32 @@
 {
-    "default": {
-        "morning": {
-            "morning_intime": {
-                "enable": true,
-                "early_time": 6,
-                "late_time": 12
-            },
-            "multi_get_up": {
-                "enable": false,
-                "interval": 6
-            },
-            "super_get_up": {
-                "enable": false,
-                "interval": 3
-            }
+    "morning": {
+        "morning_intime": {
+            "enable": true,
+            "early_time": 6,
+            "late_time": 12
         },
-        "night": {
-            "night_intime": {
-                "enable": true,
-                "early_time": 21,
-                "late_time": 6
-            },
-            "good_sleep": {
-                "enable": true,
-                "interval": 6
-            },
-            "deep_sleep": {
-                "enable": false,
-                "interval": 3
-            }
+        "multi_get_up": {
+            "enable": false,
+            "interval": 6
+        },
+        "super_get_up": {
+            "enable": false,
+            "interval": 3
+        }
+    },
+    "night": {
+        "night_intime": {
+            "enable": true,
+            "early_time": 21,
+            "late_time": 6
+        },
+        "good_sleep": {
+            "enable": true,
+            "interval": 6
+        },
+        "deep_sleep": {
+            "enable": false,
+            "interval": 3
         }
     }
 }

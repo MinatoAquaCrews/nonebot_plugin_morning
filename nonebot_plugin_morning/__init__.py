@@ -6,7 +6,6 @@ from nonebot.matcher import Matcher
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Bot, GROUP, GROUP_OWNER, GROUP_ADMIN, Message, MessageSegment, GroupMessageEvent
 from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
-from nonebot_plugin_morning.utils import SchedulerMode
 from .config import driver
 from .data_source import morning_manager
 
@@ -14,7 +13,7 @@ require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
 __morning_version__ = "v0.3.2a1"
-__morning_usage__ = f'''
+__morning_usages__ = f'''
 [早安] 早安/哦哈哟/おはよう
 [晚安] 晚安/哦呀斯密/おやすみ
 [我的作息] 看看自己的作息
@@ -29,7 +28,7 @@ __morning_usage__ = f'''
 __plugin_meta__ = PluginMetadata(
     name="おはよう！",
     description="早晚安！养成良好生活作息！",
-    usage=__morning_usage__,
+    usage=__morning_usages__,
     extra={
         "author": "KafCoppelia <k740677208@gmail.com>",
         "version": __morning_version__
@@ -53,7 +52,7 @@ night_setting = on_regex(pattern=r"^晚安(开启|关闭|设置)( (时限|优质
 async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     arg: str = args.extract_plain_text()
     if arg == "帮助":
-        await matcher.finish(__morning_usage__)
+        await matcher.finish(__morning_usages__)
             
     uid = event.user_id
     gid = event.group_id
@@ -74,7 +73,7 @@ async def good_morning(bot: Bot, matcher: Matcher, event: GroupMessageEvent, arg
 async def good_night(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     arg: str = args.extract_plain_text()
     if arg == "帮助":
-        await matcher.finish(__morning_usage__)
+        await matcher.finish(__morning_usages__)
             
     uid: int = event.user_id
     gid: int = event.group_id
@@ -257,11 +256,11 @@ async def _(event: GroupMessageEvent, matcher: Matcher):
         _param2 = 0
     
     if _op_type == "设置":
-        msg = morning_manager.morning_config(_item, str(event.group_id), _param1, _param2)
+        msg = morning_manager.morning_config(_item, _param1, _param2)
     elif _op_type == "开启":
-        msg = morning_manager.morning_switch(_item, True, str(event.group_id))
+        msg = morning_manager.morning_switch(_item, True)
     else:
-        msg = morning_manager.morning_switch(_item, False, str(event.group_id))
+        msg = morning_manager.morning_switch(_item, False)
         
     await morning_setting.finish(msg)
     
@@ -346,33 +345,28 @@ async def _(event: GroupMessageEvent, matcher: Matcher):
         _param2 = 0
     
     if _op_type == "设置":
-        msg = morning_manager.night_config(_item, str(event.group_id), _param1, _param2)
+        msg = morning_manager.night_config(_item, _param1, _param2)
     elif _op_type == "开启":
-        msg = morning_manager.night_switch(_item, True, str(event.group_id))
+        msg = morning_manager.night_switch(_item, True)
     else:
-        msg = morning_manager.night_switch(_item, False, str(event.group_id))
+        msg = morning_manager.night_switch(_item, False)
     
     await night_setting.finish(msg)
 
 # 每日最早晚安时间，重置昨日早晚安计数
 @driver.on_startup
 async def daily_refresh():
-    morning_manager.daily_scheduler(SchedulerMode.ALL_GROUP)
+    morning_manager.daily_scheduler()
     logger.info("每日早晚安定时刷新任务已启动！")
 
-# 每周一最晚晚安时间统计部分周数据
-@driver.on_startup
-async def monday_weekly_night_refresh():
-    morning_manager.weekly_night_scheduler(SchedulerMode.ALL_GROUP)
-    logger.info("每周晚安定时刷新任务已启动！")
+# 每周一零点统计部分周数据
+@scheduler.scheduled_job("cron", hour=0, minute=0, day_of_week="0", misfire_grace_time=60)
+async def monday_refresh():
+    morning_manager.weekly_night_refresh()
+    logger.info("每周晚安已刷新！")
 
 # 每周一最晚早安时间，统计上周睡眠时间、早安并重置
 @driver.on_startup
 async def weekly_refresh():
-    morning_manager.weekly_sleep_time_scheduler(SchedulerMode.ALL_GROUP)
+    morning_manager.weekly_sleep_time_scheduler()
     logger.info("每周睡眠时间定时刷新任务已启动！")
-
-# 每日零时自动检测各群组设置是否与默认配置一致，一致则移除群组键值，并入默认配置
-@scheduler.scheduled_job(trigger="cron", hour=0, minute=0, misfire_grace_time=60)
-async def trim():
-    morning_manager.auto_config_trim()
