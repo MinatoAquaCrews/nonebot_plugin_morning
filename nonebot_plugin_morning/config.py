@@ -3,7 +3,10 @@ from nonebot.log import logger
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from typing import Dict, Union
-import json
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 from .utils import morning_json_update
 
 
@@ -80,7 +83,7 @@ async def _() -> None:
                     with open(config_json_path, 'w', encoding='utf-8') as f:
                         json.dump(_config, f, ensure_ascii=False, indent=4)
                 
-                    logger.info("Initialized the config.json of Morning plugin")
+                    logger.info("Initialized the config.json")
 
     # Old data.json will be transferred from v0.2.x into v0.3.x version automatically
     old_data_path: Path = morning_config.morning_path / "data.json"
@@ -96,7 +99,7 @@ async def _() -> None:
                 with open(new_data_path, 'w', encoding='utf-8') as f:
                     json.dump(_nfile, f, ensure_ascii=False, indent=4)
 
-                logger.info("旧版数据文件已自动更新至新版，后续可关闭 OLD_MORNING_COMPATIBLE 选项！")
+                logger.info("旧版数据文件已自动更新至新版格式！")
 
             old_data_path.unlink()
 
@@ -104,5 +107,4 @@ async def _() -> None:
             with open(new_data_path, 'w', encoding='utf-8') as f:
                 json.dump(dict(), f, ensure_ascii=False, indent=4)
 
-            logger.warning(
-                "旧版数据文件不存在，已自动创建新版数据文件。开启 OLD_MORNING_COMPATIBLE 选项可将旧版 data.json 数据文件自动更新。")
+            logger.warning("旧版数据文件不存在，已重新创建数据文件！")
