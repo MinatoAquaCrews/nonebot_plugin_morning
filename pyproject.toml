@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-morning"
-version = "0.3.2a2"
+version = "0.3.2"
 description = "Good morning & good night!"
 authors = ["KafCoppelia <k740677208@gmail.com>"]
 license = "MIT"

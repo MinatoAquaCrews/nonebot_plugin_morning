@@ -9,7 +9,7 @@ from nonebot.params import Depends, CommandArg, RegexMatched, ArgStr
 from .config import driver
 from .data_source import morning_manager
 
-__morning_version__ = "v0.3.2a2"
+__morning_version__ = "v0.3.2"
 __morning_usages__ = f'''
 [早安] 早安/哦哈哟/おはよう
 [晚安] 晚安/哦呀斯密/おやすみ
@@ -363,25 +363,22 @@ async def _(event: GroupMessageEvent, matcher: Matcher):
 
     await night_setting.finish(msg)
 
+
 # 每日最早晚安时间，重置昨日早晚安计数
-
-
 @driver.on_startup
 async def daily_refresh():
     morning_manager.daily_scheduler()
     logger.info("每日早晚安定时刷新任务已启动！")
 
+
 # 每周一最晚晚安时间统计部分周数据
-
-
 @driver.on_startup
 async def monday_weekly_night_refresh():
     morning_manager.weekly_night_scheduler()
     logger.info("每周晚安定时刷新任务已启动！")
 
+
 # 每周一最晚早安时间，统计上周睡眠时间、早安并重置
-
-
 @driver.on_startup
 async def weekly_refresh():
     morning_manager.weekly_sleep_time_scheduler()

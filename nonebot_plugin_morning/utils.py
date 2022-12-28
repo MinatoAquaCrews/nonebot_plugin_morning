@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta, date
 from typing import Union, Tuple, List, Dict
-try:
-    import ujson as json
-except ModuleNotFoundError:
-    import json
+import json
 
 mor_switcher: Dict[str, str] = {
     "时限": "morning_intime",
