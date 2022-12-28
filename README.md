@@ -15,26 +15,30 @@ _🌈 おはよう！ 🌈_
   </a>
   
   <a href="https://github.com/nonebot/nonebot2">
-    <img src="https://img.shields.io/badge/nonebot2-2.0.0b3+-green">
+    <img src="https://img.shields.io/badge/nonebot2-2.0.0rc1+-green">
   </a>
   
-  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.1">
-    <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange&include_prereleases">
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.2">
+    <img src="https://img.shields.io/github/v/release/MinatoAquaCrews/nonebot_plugin_morning?color=orange">
   </a>
 
   <a href="https://www.codefactor.io/repository/github/MinatoAquaCrews/nonebot_plugin_morning">
     <img src="https://img.shields.io/codefactor/grade/github/MinatoAquaCrews/nonebot_plugin_morning/beta?color=red">
+  </a>
+
+  <a href="https://github.com/MinatoAquaCrews/nonebot_plugin_morning">
+    <img src="https://img.shields.io/pypi/dm/nonebot_plugin_morning">
   </a>
   
 </p>
 
 ## 版本
 
-v0.3.1
+v0.3.2
 
-⚠ 适配nonebot2-2.0.0beta.3+
+⚠ 适配nonebot2-2.0.0rc1+
 
-[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.1)
+[更新日志](https://github.com/MinatoAquaCrews/nonebot_plugin_morning/releases/tag/v0.3.2)
 
 ## 安装
 
@@ -52,7 +56,7 @@ v0.3.1
 
 2. 群管及超管可设置早安时限、晚安时限、优质睡眠、深度睡眠等，参见规则配置；
 
-3. 🔥 **重磅更新** 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
+3. 🔥 分群管理群友作息，群友的早晚安数据会记录至`morning.json`内，形如：
 
     ``` python
     {
@@ -110,9 +114,9 @@ v0.3.1
 
 1. 早晚安：[早安/晚安]，记录睡眠时间；
 
-2. **新增** 查看我的作息：[我的作息]：每周一新增显示上周睡眠信息统计，其他时间显示本周信息；
+2. 查看我的作息：[我的作息]：每周一新增显示上周睡眠信息统计，其他时间显示本周信息；
 
-3. **新增** 查看群友作息：[群友作息]，看看今天几个群友睡觉或起床了，每周一新增显示上周睡觉王；
+3. 查看群友作息：[群友作息]，看看今天几个群友睡觉或起床了，每周一新增显示上周睡觉王；
 
 4. 查看当前安早晚安配置（规则）：[早晚安设置]；
 
@@ -124,9 +128,9 @@ v0.3.1
 
     - 详见规则配置；
 
-## 规则配置
+## 全局规则配置
 
-`confg.json`文件已默认写入下述配置，会自动检测旧版配置文件并自动更新，当其不存在时则创建并写入下述**初始值**：
+`confg.json` 全局规则配置文件已默认写入下述配置，会自动检测旧版配置文件并自动更新，当不存在时则创建并写入下述**初始值**：
 
 ``` python
 {
